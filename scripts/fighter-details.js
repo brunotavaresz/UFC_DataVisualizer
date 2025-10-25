@@ -4,30 +4,34 @@ const FighterDetails = {
     currentFighter: null,
     
     async show(fighterId) {
-        this.currentFighter = DataLoader.getFighterById(fighterId);
-        
-        if (!this.currentFighter) {
-            console.error('Fighter not found:', fighterId);
-            return;
-        }
-        
-        // Navegar para a página mas mostrar loading
-        Navigation.navigateTo('fighter-details');
-        this.showLoadingState();
-        
-        // Carregar foto primeiro (em background)
-        await this.preloadFighterPhoto();
-        
-        // Depois renderizar tudo
-        this.renderHeader();
-        this.renderRecordChart();
-        this.renderRankings();
-        this.renderStatsTable();
-        this.renderRadarCharts();
-        
-        // Remover loading
-        this.hideLoadingState();
-    },
+    this.currentFighter = DataLoader.getFighterById(fighterId);
+    
+    if (!this.currentFighter) {
+        console.error('Fighter not found:', fighterId);
+        return;
+    }
+    
+    // Navegar para a página mas mostrar loading
+    Navigation.navigateTo('fighter-details');
+    this.showLoadingState();
+    
+    // Carregar AMBAS as fotos primeiro (em background)
+    await this.preloadFighterPhotos();
+    
+    // Depois renderizar tudo
+    this.renderHeader();
+    this.renderRecordChart();
+    this.renderRankings();
+    this.renderStatsTable();
+    this.renderRadarCharts();
+    
+    // Remover loading
+    this.hideLoadingState();
+    
+    // 👇 Garantir que a página comece no topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+},
+
     
     showLoadingState() {
         const detailsPage = document.getElementById('fighter-details');
@@ -67,7 +71,7 @@ const FighterDetails = {
                     margin: 0 auto 20px;
                 "></div>
                 <h2 style="color: #fff; margin: 0; font-size: 24px;">Loading Fighter...</h2>
-                <p style="color: #888; margin-top: 10px; font-size: 14px;">Fetching photo and stats</p>
+                <p style="color: #888; margin-top: 10px; font-size: 14px;">Fetching photos and stats</p>
             </div>
             <style>
                 @keyframes spin {
@@ -90,7 +94,7 @@ const FighterDetails = {
         }
     },
     
-    async preloadFighterPhoto() {
+    async preloadFighterPhotos() {
         const f = this.currentFighter;
         
         if (typeof FighterPhotos === 'undefined') {
@@ -98,48 +102,58 @@ const FighterDetails = {
         }
         
         try {
-            // Buscar a foto primeiro
-            const photoUrl = await FighterPhotos.getFighterPhoto(f);
+            // Buscar AMBAS as fotos (headshot + full body)
+            const photos = await FighterPhotos.getFighterPhotos(f);
             
-            // Pré-carregar a imagem
-            if (photoUrl && photoUrl !== FighterPhotos.DEFAULT_PHOTO) {
-                await new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.onload = () => resolve();
-                    img.onerror = () => resolve(); // Continuar mesmo se falhar
-                    img.src = photoUrl;
-                    
-                    // Timeout de 5 segundos
-                    setTimeout(resolve, 5000);
-                });
+            // Pré-carregar ambas
+            const preloadPromises = [];
+            
+            if (photos.headshot && photos.headshot !== FighterPhotos.DEFAULT_PHOTO) {
+                preloadPromises.push(this.preloadImage(photos.headshot));
             }
+            
+            if (photos.fullBody && photos.fullBody !== FighterPhotos.DEFAULT_PHOTO) {
+                preloadPromises.push(this.preloadImage(photos.fullBody));
+            }
+            
+            await Promise.all(preloadPromises);
         } catch (error) {
-            console.error('Error preloading photo:', error);
+            console.error('Error preloading photos:', error);
             // Continuar mesmo se houver erro
         }
+    },
+    
+    preloadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Continuar mesmo se falhar
+            img.src = url;
+            
+            // Timeout de 5 segundos
+            setTimeout(resolve, 5000);
+        });
     },
     
     renderHeader() {
         const f = this.currentFighter;
         
-        // Remover conteúdo antigo do avatar
         const avatarContainer = document.querySelector('.fighter-avatar');
         avatarContainer.innerHTML = '';
         
-        // Criar elemento de imagem
         const img = document.createElement('img');
-        img.className = 'fighter-photo loaded'; // Já adiciona 'loaded' porque pré-carregamos
+        img.className = 'fighter-photo loaded';
         img.alt = `${f.name}`;
         img.style.cssText = `
-            width: 200px;
-            height: 200px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid #d91c1c;
             box-shadow: 0 8px 32px rgba(217, 28, 28, 0.3);
             transition: all 0.3s ease;
-            opacity: 0;
-            animation: fadeIn 0.5s ease forwards;
+            display: block;
+            cursor: pointer;
         `;
         
         avatarContainer.appendChild(img);
@@ -147,14 +161,30 @@ const FighterDetails = {
         // Carregar foto (já deve estar em cache)
         if (typeof FighterPhotos !== 'undefined') {
             const cacheKey = f.id;
-            const cachedPhoto = FighterPhotos.photoCache[cacheKey];
+            const cachedPhotos = FighterPhotos.photoCache[cacheKey];
             
-            if (cachedPhoto) {
+            if (cachedPhotos && cachedPhotos.headshot) {
                 // Foto já está em cache, mostrar imediatamente
-                img.src = cachedPhoto;
+                img.src = cachedPhotos.headshot;
+                
+                // Adicionar click handler para mostrar foto de corpo
+                img.addEventListener('click', () => {
+                    const fullBodyUrl = cachedPhotos.fullBody || cachedPhotos.headshot;
+                    this.showFullBodyModal(fullBodyUrl, f.name);
+                });
+                
+                // Adicionar tooltip
+                img.title = 'Click to view full body photo';
             } else {
                 // Fallback: carregar normalmente
                 FighterPhotos.loadPhotoIntoElement(f, img);
+                
+                // Adicionar click handler após carregar
+                img.addEventListener('click', async () => {
+                    const photos = await FighterPhotos.getFighterPhotos(f);
+                    const fullBodyUrl = photos.fullBody || photos.headshot;
+                    this.showFullBodyModal(fullBodyUrl, f.name);
+                });
             }
         } else {
             console.warn('⚠️ FighterPhotos module not loaded, using fallback');
@@ -200,6 +230,78 @@ const FighterDetails = {
         ageEl.textContent = f.age || '-';
         stanceEl.textContent = formatStance(f.stance);
         winrateEl.textContent = `${f.winRate}%`;
+    },
+    
+    showFullBodyModal(photoUrl, fighterName) {
+        // Criar modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+            cursor: pointer;
+            padding: 2rem;
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                position: relative;
+                max-width: 90%;
+                max-height: 90%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            ">
+                <h2 style="
+                    color: #fff;
+                    margin-bottom: 1rem;
+                    font-size: 2rem;
+                    text-align: center;
+                ">${fighterName}</h2>
+                <img src="${photoUrl}" 
+                     alt="${fighterName} Full Body" 
+                     style="
+                        max-width: 100%;
+                        max-height: 80vh;
+                        object-fit: contain;
+                        border-radius: 12px;
+                        box-shadow: 0 20px 60px rgba(217, 28, 28, 0.5);
+                        border: 3px solid #d91c1c;
+                     ">
+                <p style="
+                    color: #888;
+                    margin-top: 1rem;
+                    font-size: 0.9rem;
+                ">Click anywhere to close</p>
+            </div>
+        `;
+        
+        // Fechar ao clicar
+        modal.addEventListener('click', () => {
+            modal.style.transition = 'opacity 0.3s ease';
+            modal.style.opacity = '0';
+            setTimeout(() => modal.remove(), 300);
+        });
+        
+        // Fechar com ESC
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.click();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        document.body.appendChild(modal);
     },
     
     renderRecordChart() {
@@ -263,57 +365,56 @@ const FighterDetails = {
     },
     
     renderRankings() {
-    const f = this.currentFighter;
-    
-    const rankings = [
-        { name: 'Win Rate', value: f.winRate, max: 100 },
-        { name: 'Reach', value: Math.min((f.reach / 200) * 100, 100), max: 100 },
-        { name: 'SPLM', value: Math.min((f.splm / 10) * 100, 100), max: 100 },
-        { name: 'SAPM', value: Math.min((f.sapm / 10) * 100, 100), max: 100 },
-        { name: 'TD Avg', value: Math.min((f.td_avg / 5) * 100, 100), max: 100 },
-        { name: 'Sub Avg', value: Math.min((f.sub_avg / 2) * 100, 100), max: 100 }
-    ];
-    
-    const container = d3.select('#rankings-chart').html('');
-    
-    rankings.forEach((rank, index) => {
-        // ✅ Criar a barra (sem transição)
-        const bar = container.append('div')
-            .style('margin-bottom', '1rem')
-            .style('opacity', 0);
+        const f = this.currentFighter;
         
-        // Aplicar a transição de fade-in separadamente
-        bar.transition()
-            .duration(300)
-            .delay(index * 50)
-            .style('opacity', 1);
+        const rankings = [
+            { name: 'Win Rate', value: f.winRate, max: 100 },
+            { name: 'Reach', value: Math.min((f.reach / 200) * 100, 100), max: 100 },
+            { name: 'SPLM', value: Math.min((f.splm / 10) * 100, 100), max: 100 },
+            { name: 'SAPM', value: Math.min((f.sapm / 10) * 100, 100), max: 100 },
+            { name: 'TD Avg', value: Math.min((f.td_avg / 5) * 100, 100), max: 100 },
+            { name: 'Sub Avg', value: Math.min((f.sub_avg / 2) * 100, 100), max: 100 }
+        ];
         
-        // Label
-        bar.append('div')
-            .style('color', '#888')
-            .style('margin-bottom', '0.25rem')
-            .style('font-size', '0.9rem')
-            .text(`${rank.name}: ${Math.round(rank.value)}%`);
+        const container = d3.select('#rankings-chart').html('');
         
-        // Fundo
-        const barBg = bar.append('div')
-            .style('background', '#2d2d2d')
-            .style('height', '12px')
-            .style('border-radius', '6px')
-            .style('overflow', 'hidden');
-        
-        // Barra preenchida
-        barBg.append('div')
-            .style('background', 'linear-gradient(90deg, #d91c1c, #ff4444)')
-            .style('height', '100%')
-            .style('width', '0%')
-            .transition()
-            .duration(1000)
-            .delay(index * 50)
-            .style('width', `${rank.value}%`);
-    });
-},
-
+        rankings.forEach((rank, index) => {
+            // Criar a barra (sem transição)
+            const bar = container.append('div')
+                .style('margin-bottom', '1rem')
+                .style('opacity', 0);
+            
+            // Aplicar a transição de fade-in separadamente
+            bar.transition()
+                .duration(300)
+                .delay(index * 50)
+                .style('opacity', 1);
+            
+            // Label
+            bar.append('div')
+                .style('color', '#888')
+                .style('margin-bottom', '0.25rem')
+                .style('font-size', '0.9rem')
+                .text(`${rank.name}: ${Math.round(rank.value)}%`);
+            
+            // Fundo
+            const barBg = bar.append('div')
+                .style('background', '#2d2d2d')
+                .style('height', '12px')
+                .style('border-radius', '6px')
+                .style('overflow', 'hidden');
+            
+            // Barra preenchida
+            barBg.append('div')
+                .style('background', 'linear-gradient(90deg, #d91c1c, #ff4444)')
+                .style('height', '100%')
+                .style('width', '0%')
+                .transition()
+                .duration(1000)
+                .delay(index * 50)
+                .style('width', `${rank.value}%`);
+        });
+    },
     
     renderStatsTable() {
         const f = this.currentFighter;

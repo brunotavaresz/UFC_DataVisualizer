@@ -310,15 +310,15 @@ tbody tr:hover {
     border-radius: 16px;
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 3rem; /* Aumentar gap */
     margin-bottom: 2rem;
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 .fighter-avatar {
-    width: 150px;
-    height: 150px;
-    flex-shrink: 0;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0; /* Evita que a foto encolha */
 }
 
 .avatar-circle {
@@ -333,6 +333,28 @@ tbody tr:hover {
     font-weight: bold;
     color: white;
     box-shadow: 0 8px 24px rgba(217, 28, 28, 0.4);
+}
+
+.fighter-info {
+    flex: 1; /* Permite que as infos ocupem o espaço restante */
+    min-width: 0; /* Previne overflow */
+}
+
+@media (max-width: 768px) {
+    .fighter-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .fighter-avatar {
+        margin: 0 auto;
+    }
+    
+    .fighter-basic-stats {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
 }
 
 .fighter-info h1 {
@@ -350,11 +372,13 @@ tbody tr:hover {
 .fighter-basic-stats {
     display: flex;
     gap: 3rem;
+    flex-wrap: wrap; /* Permite quebra em ecrãs pequenos */
 }
 
 .basic-stat {
     display: flex;
     flex-direction: column;
+    min-width: 80px; /* Garante tamanho mínimo */
 }
 
 .basic-stat .stat-label {
