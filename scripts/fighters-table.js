@@ -105,7 +105,7 @@ const FightersTable = {
         }
         
         tbody.innerHTML = this.filteredData.map(fighter => `
-            <tr data-fighter-id="${fighter.id}">
+            <tr data-fighter-id="${fighter.id}" class="fighter-row">
                 <td><strong>${fighter.name}</strong></td>
                 <td>${fighter.nickname || '-'}</td>
                 <td>${fighter.wins}</td>
@@ -120,18 +120,40 @@ const FightersTable = {
         
         // Add click handlers for detail buttons
         tbody.querySelectorAll('.btn-details').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const fighterId = btn.getAttribute('data-fighter-id');
-                FighterDetails.show(fighterId);
+                
+                // Desabilitar botão durante carregamento
+                btn.disabled = true;
+                const originalText = btn.textContent;
+                btn.textContent = 'Loading...';
+                
+                await FighterDetails.show(fighterId);
+                
+                // Re-habilitar botão
+                btn.disabled = false;
+                btn.textContent = originalText;
             });
         });
         
         // Add click handlers for rows
-        tbody.querySelectorAll('tr').forEach(row => {
-            row.addEventListener('click', () => {
+        tbody.querySelectorAll('tr.fighter-row').forEach(row => {
+            row.addEventListener('click', async (e) => {
+                // Não disparar se clicou no botão
+                if (e.target.tagName === 'BUTTON') return;
+                
                 const fighterId = row.getAttribute('data-fighter-id');
-                FighterDetails.show(fighterId);
+                
+                // Adicionar efeito visual
+                row.style.background = 'rgba(217, 28, 28, 0.2)';
+                
+                await FighterDetails.show(fighterId);
+                
+                // Remover efeito
+                setTimeout(() => {
+                    row.style.background = '';
+                }, 300);
             });
         });
         

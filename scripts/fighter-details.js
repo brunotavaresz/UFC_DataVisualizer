@@ -1,10 +1,9 @@
-
-// Fighter details page with visualizations
+// Fighter details page with visualizations and photos
 
 const FighterDetails = {
     currentFighter: null,
     
-    show(fighterId) {
+    async show(fighterId) {
         this.currentFighter = DataLoader.getFighterById(fighterId);
         
         if (!this.currentFighter) {
@@ -12,28 +11,195 @@ const FighterDetails = {
             return;
         }
         
+        // Navegar para a página mas mostrar loading
+        Navigation.navigateTo('fighter-details');
+        this.showLoadingState();
+        
+        // Carregar foto primeiro (em background)
+        await this.preloadFighterPhoto();
+        
+        // Depois renderizar tudo
         this.renderHeader();
         this.renderRecordChart();
         this.renderRankings();
         this.renderStatsTable();
         this.renderRadarCharts();
         
-        Navigation.navigateTo('fighter-details');
+        // Remover loading
+        this.hideLoadingState();
+    },
+    
+    showLoadingState() {
+        const detailsPage = document.getElementById('fighter-details');
+        
+        // Criar overlay de loading
+        const existingOverlay = detailsPage.querySelector('.loading-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+        `;
+        
+        overlay.innerHTML = `
+            <div style="text-align: center;">
+                <div class="spinner" style="
+                    width: 60px;
+                    height: 60px;
+                    border: 4px solid #333;
+                    border-top: 4px solid #d91c1c;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                "></div>
+                <h2 style="color: #fff; margin: 0; font-size: 24px;">Loading Fighter...</h2>
+                <p style="color: #888; margin-top: 10px; font-size: 14px;">Fetching photo and stats</p>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        detailsPage.appendChild(overlay);
+    },
+    
+    hideLoadingState() {
+        const overlay = document.querySelector('.loading-overlay');
+        if (overlay) {
+            // Fade out suave
+            overlay.style.transition = 'opacity 0.3s ease';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 300);
+        }
+    },
+    
+    async preloadFighterPhoto() {
+        const f = this.currentFighter;
+        
+        if (typeof FighterPhotos === 'undefined') {
+            return;
+        }
+        
+        try {
+            // Buscar a foto primeiro
+            const photoUrl = await FighterPhotos.getFighterPhoto(f);
+            
+            // Pré-carregar a imagem
+            if (photoUrl && photoUrl !== FighterPhotos.DEFAULT_PHOTO) {
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => resolve(); // Continuar mesmo se falhar
+                    img.src = photoUrl;
+                    
+                    // Timeout de 5 segundos
+                    setTimeout(resolve, 5000);
+                });
+            }
+        } catch (error) {
+            console.error('Error preloading photo:', error);
+            // Continuar mesmo se houver erro
+        }
     },
     
     renderHeader() {
         const f = this.currentFighter;
         
-        // Avatar with initials
-        const initials = f.name.split(' ').map(n => n[0]).join('');
-        document.querySelector('.avatar-circle').textContent = initials;
+        // Remover conteúdo antigo do avatar
+        const avatarContainer = document.querySelector('.fighter-avatar');
+        avatarContainer.innerHTML = '';
         
-        // Basic info
-        document.getElementById('fighter-name').textContent = f.name;
-        document.getElementById('fighter-nickname').textContent = f.nickname ? `"${f.nickname}"` : '';
-        document.getElementById('fighter-age').textContent = f.age || '-';
-        document.getElementById('fighter-stance').textContent = formatStance(f.stance);
-        document.getElementById('fighter-winrate').textContent = `${f.winRate}%`;
+        // Criar elemento de imagem
+        const img = document.createElement('img');
+        img.className = 'fighter-photo loaded'; // Já adiciona 'loaded' porque pré-carregamos
+        img.alt = `${f.name}`;
+        img.style.cssText = `
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #d91c1c;
+            box-shadow: 0 8px 32px rgba(217, 28, 28, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        `;
+        
+        avatarContainer.appendChild(img);
+        
+        // Carregar foto (já deve estar em cache)
+        if (typeof FighterPhotos !== 'undefined') {
+            const cacheKey = f.id;
+            const cachedPhoto = FighterPhotos.photoCache[cacheKey];
+            
+            if (cachedPhoto) {
+                // Foto já está em cache, mostrar imediatamente
+                img.src = cachedPhoto;
+            } else {
+                // Fallback: carregar normalmente
+                FighterPhotos.loadPhotoIntoElement(f, img);
+            }
+        } else {
+            console.warn('⚠️ FighterPhotos module not loaded, using fallback');
+            // Fallback: mostrar iniciais
+            const initials = f.name.split(' ').map(n => n[0]).join('');
+            avatarContainer.innerHTML = `
+                <div class="avatar-circle" style="
+                    width: 200px;
+                    height: 200px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #d91c1c, #ff4444);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 64px;
+                    font-weight: bold;
+                    color: white;
+                    border: 4px solid #d91c1c;
+                    box-shadow: 0 8px 32px rgba(217, 28, 28, 0.3);
+                    animation: fadeIn 0.5s ease;
+                ">${initials}</div>
+            `;
+        }
+        
+        // Basic info com animação
+        const nameEl = document.getElementById('fighter-name');
+        const nicknameEl = document.getElementById('fighter-nickname');
+        const ageEl = document.getElementById('fighter-age');
+        const stanceEl = document.getElementById('fighter-stance');
+        const winrateEl = document.getElementById('fighter-winrate');
+        
+        // Fade in para o texto
+        [nameEl, nicknameEl, ageEl, stanceEl, winrateEl].forEach(el => {
+            if (el) {
+                el.style.opacity = '0';
+                el.style.animation = 'fadeIn 0.5s ease forwards';
+                el.style.animationDelay = '0.1s';
+            }
+        });
+        
+        nameEl.textContent = f.name;
+        nicknameEl.textContent = f.nickname ? `"${f.nickname}"` : '';
+        ageEl.textContent = f.age || '-';
+        stanceEl.textContent = formatStance(f.stance);
+        winrateEl.textContent = `${f.winRate}%`;
     },
     
     renderRecordChart() {
@@ -76,6 +242,10 @@ const FighterDetails = {
             .attr('fill', d => d.data.color)
             .attr('stroke', '#1a1a1a')
             .attr('stroke-width', 2)
+            .style('opacity', 0)
+            .transition()
+            .duration(500)
+            .delay((d, i) => i * 100)
             .style('opacity', 0.9);
         
         arcs.append('text')
@@ -84,49 +254,66 @@ const FighterDetails = {
             .attr('fill', 'white')
             .attr('font-weight', 'bold')
             .attr('font-size', '18px')
-            .text(d => d.data.value);
+            .style('opacity', 0)
+            .text(d => d.data.value)
+            .transition()
+            .duration(500)
+            .delay((d, i) => i * 100 + 200)
+            .style('opacity', 1);
     },
     
     renderRankings() {
-        const f = this.currentFighter;
+    const f = this.currentFighter;
+    
+    const rankings = [
+        { name: 'Win Rate', value: f.winRate, max: 100 },
+        { name: 'Reach', value: Math.min((f.reach / 200) * 100, 100), max: 100 },
+        { name: 'SPLM', value: Math.min((f.splm / 10) * 100, 100), max: 100 },
+        { name: 'SAPM', value: Math.min((f.sapm / 10) * 100, 100), max: 100 },
+        { name: 'TD Avg', value: Math.min((f.td_avg / 5) * 100, 100), max: 100 },
+        { name: 'Sub Avg', value: Math.min((f.sub_avg / 2) * 100, 100), max: 100 }
+    ];
+    
+    const container = d3.select('#rankings-chart').html('');
+    
+    rankings.forEach((rank, index) => {
+        // ✅ Criar a barra (sem transição)
+        const bar = container.append('div')
+            .style('margin-bottom', '1rem')
+            .style('opacity', 0);
         
-        const rankings = [
-            { name: 'Win Rate', value: f.winRate, max: 100 },
-            { name: 'Reach', value: Math.min((f.reach / 200) * 100, 100), max: 100 },
-            { name: 'SPLM', value: Math.min((f.splm / 10) * 100, 100), max: 100 },
-            { name: 'SAPM', value: Math.min((f.sapm / 10) * 100, 100), max: 100 },
-            { name: 'TD Avg', value: Math.min((f.td_avg / 5) * 100, 100), max: 100 },
-            { name: 'Sub Avg', value: Math.min((f.sub_avg / 2) * 100, 100), max: 100 }
-        ];
+        // Aplicar a transição de fade-in separadamente
+        bar.transition()
+            .duration(300)
+            .delay(index * 50)
+            .style('opacity', 1);
         
-        const container = d3.select('#rankings-chart').html('');
+        // Label
+        bar.append('div')
+            .style('color', '#888')
+            .style('margin-bottom', '0.25rem')
+            .style('font-size', '0.9rem')
+            .text(`${rank.name}: ${Math.round(rank.value)}%`);
         
-        rankings.forEach(rank => {
-            const bar = container.append('div')
-                .style('margin-bottom', '1rem');
-            
-            bar.append('div')
-                .style('color', '#888')
-                .style('margin-bottom', '0.25rem')
-                .style('font-size', '0.9rem')
-                .text(`${rank.name}: ${Math.round(rank.value)}%`);
-            
-            const barBg = bar.append('div')
-                .style('background', '#2d2d2d')
-                .style('height', '12px')
-                .style('border-radius', '6px')
-                .style('overflow', 'hidden');
-            
-            barBg.append('div')
-                .style('background', 'linear-gradient(90deg, #d91c1c, #ff4444)')
-                .style('height', '100%')
-                .style('width', '0%')
-                .style('transition', 'width 1s ease')
-                .transition()
-                .duration(1000)
-                .style('width', `${rank.value}%`);
-        });
-    },
+        // Fundo
+        const barBg = bar.append('div')
+            .style('background', '#2d2d2d')
+            .style('height', '12px')
+            .style('border-radius', '6px')
+            .style('overflow', 'hidden');
+        
+        // Barra preenchida
+        barBg.append('div')
+            .style('background', 'linear-gradient(90deg, #d91c1c, #ff4444)')
+            .style('height', '100%')
+            .style('width', '0%')
+            .transition()
+            .duration(1000)
+            .delay(index * 50)
+            .style('width', `${rank.value}%`);
+    });
+},
+
     
     renderStatsTable() {
         const f = this.currentFighter;
