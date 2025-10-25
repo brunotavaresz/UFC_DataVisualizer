@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Data Visualizer (1994-2025)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/92/UFC_Logo.svg" alt="UFC Logo" class="logo">
+        <ul class="nav-links">
+            <li><a href="#" data-page="landing" class="active">Home</a></li>
+            <li><a href="#" data-page="fighters">Fighters</a></li>
+            <li><a href="#" data-page="compare">Compare</a></li>
+            <li><a href="#" data-page="events">Events & Fights</a></li>
+        </ul>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="landing" class="page active">
+        <div class="landing">
+            <h1>UFC Data Visualizer</h1>
+            <p>Explore and analyze UFC history through interactive visualizations (1994-2025)</p>
+            <div class="landing-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-fighters">-</div>
+                    <div class="stat-label">Fighters</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-events">-</div>
+                    <div class="stat-label">Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-fights">-</div>
+                    <div class="stat-label">Fights</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fighters Page -->
+    <div id="fighters" class="page">
+        <h2 class="page-title">Fighter Database</h2>
+        
+        <div class="filters">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label>Search Fighter</label>
+                    <input type="text" id="search-fighter" placeholder="Name or nickname...">
+                </div>
+                
+                <div class="filter-group">
+                    <label>Weight Division</label>
+                    <select id="filter-division">
+                        <option value="">All Divisions</option>
+                        <option value="flyweight">Flyweight</option>
+                        <option value="bantamweight">Bantamweight</option>
+                        <option value="featherweight">Featherweight</option>
+                        <option value="lightweight">Lightweight</option>
+                        <option value="welterweight">Welterweight</option>
+                        <option value="middleweight">Middleweight</option>
+                        <option value="light_heavyweight">Light Heavyweight</option>
+                        <option value="heavyweight">Heavyweight</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Stance</label>
+                    <select id="filter-stance">
+                        <option value="">All Stances</option>
+                        <option value="Orthodox">Orthodox</option>
+                        <option value="Southpaw">Southpaw</option>
+                        <option value="Switch">Switch</option>
+                        <option value="Open">Open</option>
+                        <option value="Sideways">Sideways</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Win Rate</label>
+                    <div class="range-inputs">
+                        <input type="number" id="winrate-min" placeholder="0" min="0" max="100" style="width: 70px;">
+                        <span>to</span>
+                        <input type="number" id="winrate-max" placeholder="100" min="0" max="100" style="width: 70px;">
+                        <span>%</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Age Range</label>
+                    <div class="range-inputs">
+                        <input type="number" id="age-min" placeholder="18" min="18" max="60" style="width: 70px;">
+                        <span>to</span>
+                        <input type="number" id="age-max" placeholder="55" min="18" max="60" style="width: 70px;">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Clear Filters</label>
+                    <button id="clear-filters" class="btn-secondary">Reset All</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="fighters-table">
+                <thead>
+                    <tr>
+                        <th data-sort="name">Name</th>
+                        <th data-sort="nickname">Nickname</th>
+                        <th data-sort="wins">Wins</th>
+                        <th data-sort="losses">Losses</th>
+                        <th data-sort="draws">Draws</th>
+                        <th data-sort="height">Height</th>
+                        <th data-sort="weight">Weight</th>
+                        <th data-sort="stance">Stance</th>
+                        <th>More Details</th>
+                    </tr>
+                </thead>
+                <tbody id="fighters-tbody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Fighter Details Page -->
+    <div id="fighter-details" class="page">
+        <button id="back-to-fighters" class="btn-back">← Back to Fighters</button>
+        
+        <div class="fighter-header">
+            <div class="fighter-avatar">
+                <div class="avatar-circle"></div>
+            </div>
+            <div class="fighter-info">
+                <h1 id="fighter-name">-</h1>
+                <p id="fighter-nickname" class="nickname">-</p>
+                <div class="fighter-basic-stats">
+                    <div class="basic-stat">
+                        <span class="stat-label">Age</span>
+                        <span class="stat-value" id="fighter-age">-</span>
+                    </div>
+                    <div class="basic-stat">
+                        <span class="stat-label">Stance</span>
+                        <span class="stat-value" id="fighter-stance">-</span>
+                    </div>
+                    <div class="basic-stat">
+                        <span class="stat-label">Win Rate</span>
+                        <span class="stat-value" id="fighter-winrate">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <!-- Win/Loss Pie Chart -->
+            <div class="detail-card">
+                <h3>Record Breakdown</h3>
+                <div id="record-chart"></div>
+                <div class="record-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #4ade80;"></span>
+                        <span id="legend-wins">Wins: -</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #ef4444;"></span>
+                        <span id="legend-losses">Losses: -</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #fbbf24;"></span>
+                        <span id="legend-draws">Draws: -</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ranking Bars -->
+            <div class="detail-card">
+                <h3>Rankings</h3>
+                <div id="rankings-chart"></div>
+            </div>
+
+            <!-- Stats Table -->
+            <div class="detail-card stats-table-card">
+                <h3>Fighting Statistics</h3>
+                <table class="stats-table">
+                    <tbody id="stats-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Radar Charts -->
+            <div class="detail-card">
+                <h3>Striking Profile</h3>
+                <svg id="striking-radar" width="300" height="300"></svg>
+            </div>
+
+            <div class="detail-card">
+                <h3>Takedown Profile</h3>
+                <svg id="takedown-radar" width="300" height="300"></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Page -->
+    <div id="compare" class="page">
+        <h2 class="page-title">Compare Fighters Head-to-Head</h2>
+        <p class="page-subtitle">Select two fighters to analyze their stats side by side</p>
+        <!-- To be implemented -->
+    </div>
+
+    <!-- Events Page -->
+    <div id="events" class="page">
+        <h2 class="page-title">Events & Fights History</h2>
+        <p class="page-subtitle">Discover UFC history through events and memorable fights</p>
+        <!-- To be implemented -->
+    </div>
+
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/data-loader.js"></script>
+    <script src="scripts/fighters-table.js"></script>
+    <script src="scripts/fighter-details.js"></script>
+    <script src="scripts/navigation.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
