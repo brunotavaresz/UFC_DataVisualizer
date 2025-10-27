@@ -161,7 +161,7 @@ const FighterDetails = {
     container.addEventListener('click', () => {
         this.hideTooltip();
         // Aqui você chama a função de comparação
-        // Exemplo: FighterComparison.startComparison(f.id);
+        FighterComparison.startComparison(f.id);
         console.log('Starting comparison for fighter:', f.id, f.name);
         
         // Feedback visual no clique

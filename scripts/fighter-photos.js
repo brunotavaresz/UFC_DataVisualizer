@@ -1,6 +1,6 @@
 // ===================================
-// UFC Fighter Photos Module (Turbo Edition 🚀)
-// Ultra-fast with smart cache, parallel fetch, and graceful fallbacks
+// UFC Fighter Photos Module (Fixed Edition 🔧)
+// Melhor handling de CORS e fallbacks mais inteligentes
 // ===================================
 
 const FighterPhotos = {
@@ -8,11 +8,13 @@ const FighterPhotos = {
     photoCache: {},
     debug: true,
     cacheTTL: 1000 * 60 * 60 * 24 * 7, // 7 dias
+    
+    // Proxies ordenados por confiabilidade
     corsProxies: [
-        'https://corsproxy.io/?',              // Mais confiável - tentar primeiro
-        'https://api.allorigins.win/raw?url=', // Backup
+        'https://api.allorigins.win/raw?url=',
+        'https://api.codetabs.com/v1/proxy?quest=',
+        'https://corsproxy.io/?',
     ],
-    currentProxyIndex: 0,
 
     // Foto padrão (SVG)
     DEFAULT_PHOTO: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Cdefs%3E%3ClinearGradient id="grad" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%23d91c1c;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%23ff4444;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill="url(%23grad)" width="200" height="200"/%3E%3Ctext x="50%25" y="45%25" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial"%3EUFC%3C/text%3E%3Ctext x="50%25" y="65%25" text-anchor="middle" fill="white" font-size="20" font-family="Arial" opacity="0.8"%3EFighter%3C/text%3E%3C/svg%3E',
@@ -68,91 +70,142 @@ const FighterPhotos = {
     },
 
     // =========================
-    // Fetch logic
+    // Fetch logic (MELHORADO)
     // =========================
-    async tryDirectFetch(url) {
-        try {
-            const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
-            if (!res.ok) throw new Error(res.status);
-            return await res.text();
-        } catch {
-            return null;
-        }
-    },
-
-    async fetchWithProxy(url) {
-        const proxy = this.corsProxies[this.currentProxyIndex];
-        const proxiedUrl = proxy + encodeURIComponent(url);
+    async fetchWithTimeout(url, timeout = 4000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
         try {
-            const response = await fetch(proxiedUrl, {
-                method: 'GET',
+            const response = await fetch(url, {
+                signal: controller.signal,
                 headers: { 'Accept': 'text/html,application/xhtml+xml' },
+                mode: 'cors',
+                cache: 'default'
             });
-
+            clearTimeout(timeoutId);
+            
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return await response.text();
         } catch (error) {
-            this.currentProxyIndex = (this.currentProxyIndex + 1) % this.corsProxies.length;
+            clearTimeout(timeoutId);
             throw error;
         }
     },
 
-    async fetchWithTimeout(url, ms = 5000) {
-        return Promise.race([
-            fetch(url, { headers: { 'Accept': 'text/html,application/xhtml+xml' } })
-                .then(r => (r.ok ? r.text() : Promise.reject(r.status))),
-            new Promise((_, reject) => setTimeout(() => reject('timeout'), ms))
-        ]);
+    async tryFetchWithProxies(url) {
+        // Tenta cada proxy em sequência
+        for (let i = 0; i < this.corsProxies.length; i++) {
+            const proxy = this.corsProxies[i];
+            const proxiedUrl = proxy + encodeURIComponent(url);
+            
+            try {
+                this.log(`🔄 Trying proxy ${i + 1}/${this.corsProxies.length} for ${url.split('/').pop()}`);
+                const html = await this.fetchWithTimeout(proxiedUrl, 8000);
+                
+                // Verifica se o HTML é válido
+                if (html && html.length > 1000 && html.includes('ufc')) {
+                    this.log(`✅ Success with proxy ${i + 1}`);
+                    return html;
+                }
+            } catch (error) {
+                this.log(`❌ Proxy ${i + 1} failed: ${error.message}`);
+                continue;
+            }
+        }
+        
+        return null;
     },
 
     // =========================
-    // Extractors
+    // Extractors (MELHORADOS)
     // =========================
     extractHeadshotUrl(html) {
+        // 1. Meta tag og:image (mais confiável)
         const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-        if (ogImageMatch?.[1]) return ogImageMatch[1];
+        if (ogImageMatch?.[1]) {
+            this.log(`📸 Found og:image`);
+            return ogImageMatch[1];
+        }
 
+        // 2. Hero profile image
         const heroMatch = html.match(/<img[^>]*class=["'][^"']*hero-profile[^"']*["'][^>]*src=["']([^"']+)["']/i);
-        if (heroMatch?.[1]) return heroMatch[1];
+        if (heroMatch?.[1]) {
+            this.log(`📸 Found hero-profile`);
+            return heroMatch[1];
+        }
 
-        const cloudFrontMatch = html.match(/https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+\.(?:jpg|png)/i);
-        if (cloudFrontMatch) return cloudFrontMatch[0];
+        // 3. CloudFront image com -mug (headshot específico)
+        const mugMatch = html.match(/(https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+-mug[^"'\s?]*\.(?:jpg|png))/i);
+        if (mugMatch?.[1]) {
+            this.log(`📸 Found -mug image`);
+            return mugMatch[1];
+        }
 
+        // 4. Qualquer CloudFront image
+        const cloudFrontMatch = html.match(/(https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+\.(?:jpg|png))/i);
+        if (cloudFrontMatch?.[1]) {
+            this.log(`📸 Found CloudFront image`);
+            return cloudFrontMatch[1];
+        }
+
+        this.log(`⚠️ No headshot found`);
         return null;
     },
 
     extractFullBodyUrl(html) {
+        // 1. Hero profile image (full body)
         const heroImageMatch = html.match(/<img[^>]*class=["'][^"']*hero-profile__image[^"']*["'][^>]*src=["']([^"'?]+)[^"']*["']/i);
-        if (heroImageMatch?.[1]) return heroImageMatch[1];
+        if (heroImageMatch?.[1]) {
+            this.log(`🧍 Found hero-profile__image`);
+            return heroImageMatch[1];
+        }
 
+        // 2. Wrap image
         const wrapMatch = html.match(/<div[^>]*class=["'][^"']*hero-profile__image-wrap[^"']*["'][^>]*>[\s\S]*?<img[^>]*src=["']([^"'?]+)[^"']*["']/i);
-        if (wrapMatch?.[1]) return wrapMatch[1];
+        if (wrapMatch?.[1]) {
+            this.log(`🧍 Found image-wrap`);
+            return wrapMatch[1];
+        }
 
+        // 3. athlete_bio_full_body path
         const fullBodyPathMatch = html.match(/(https?:\/\/[^"'\s]*athlete_bio_full_body[^"'\s?]*\.(?:jpg|png))/i);
-        if (fullBodyPathMatch?.[1]) return fullBodyPathMatch[1];
+        if (fullBodyPathMatch?.[1]) {
+            this.log(`🧍 Found full_body path`);
+            return fullBodyPathMatch[1];
+        }
 
+        // 4. CloudFront images (excluindo -mug)
         const allImages = html.match(/https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+\.(?:jpg|png)/gi) || [];
         const fullBodyImages = allImages.filter(url => 
             !url.includes('-mug') && 
-            (url.includes('athlete_bio') || url.includes('styles'))
+            (url.includes('athlete_bio') || url.includes('styles') || url.length > 80)
         );
-        if (fullBodyImages.length) return fullBodyImages[0];
+        if (fullBodyImages.length) {
+            this.log(`🧍 Found CloudFront full body`);
+            return fullBodyImages[0];
+        }
 
+        // 5. Tentar remover -mug do headshot
         const headshot = this.extractHeadshotUrl(html);
-        if (headshot?.includes('-mug')) return headshot.replace('-mug', '');
+        if (headshot?.includes('-mug')) {
+            this.log(`🧍 Converting -mug to full body`);
+            return headshot.replace('-mug', '');
+        }
 
+        this.log(`⚠️ No full body found`);
         return null;
     },
 
     // =========================
-    // Main logic
+    // Main logic (MELHORADO)
     // =========================
     async getFighterPhotos(fighter) {
         const cacheKey = fighter.id;
         const cached = this.photoCache[cacheKey];
 
-        if (cached && (Date.now() - cached.timestamp < this.cacheTTL)) {
+        // Verifica cache válido
+        if (cached && !cached.error && (Date.now() - cached.timestamp < this.cacheTTL)) {
             this.log(`📦 Cache hit for ${fighter.name}`);
             return cached;
         }
@@ -162,25 +215,23 @@ const FighterPhotos = {
         const profileUrls = this.generateProfileUrls(fighter);
         let html = null;
 
-        // 1️⃣ Tenta acesso direto (sem proxy)
-        html = await this.tryDirectFetch(profileUrls[0]) || await this.tryDirectFetch(profileUrls[1]);
-
-        // 2️⃣ Se falhar, tenta proxies em paralelo
-        if (!html) {
-            const allUrls = profileUrls.flatMap(page =>
-                this.corsProxies.map(proxy => proxy + encodeURIComponent(page))
-            );
-
-            for (const batch of [allUrls.slice(0, 2), allUrls.slice(2)]) {
-                try {
-                    html = await Promise.any(batch.map(u => this.fetchWithTimeout(u)));
-                    if (html) break;
-                } catch (_) {}
+        // Tenta buscar HTML de cada URL
+        for (const url of profileUrls) {
+            try {
+                html = await this.tryFetchWithProxies(url);
+                if (html) {
+                    this.log(`✅ Got HTML from ${url.split('/').pop()}`);
+                    break;
+                }
+            } catch (error) {
+                this.log(`❌ Failed to fetch ${url.split('/').pop()}: ${error.message}`);
+                continue;
             }
         }
 
+        // Se não conseguiu HTML, retorna fallback
         if (!html) {
-            console.warn(`⚠️ No response for ${fighter.name}`);
+            console.warn(`⚠️ No response for ${fighter.name} - using default photo`);
             const fallback = {
                 headshot: this.DEFAULT_PHOTO,
                 fullBody: this.DEFAULT_PHOTO,
@@ -192,23 +243,38 @@ const FighterPhotos = {
             return fallback;
         }
 
-        // 3️⃣ Extrair imagens
-        const [headshotUrl, fullBodyUrl] = await Promise.all([
-            Promise.resolve(this.extractHeadshotUrl(html)),
-            Promise.resolve(this.extractFullBodyUrl(html))
-        ]);
+        // Extrai imagens
+        const headshotUrl = this.extractHeadshotUrl(html);
+        const fullBodyUrl = this.extractFullBodyUrl(html);
 
+        // Se não encontrou nenhuma imagem, marca como erro mas tenta novamente depois
+        if (!headshotUrl && !fullBodyUrl) {
+            console.warn(`⚠️ No images found for ${fighter.name} in HTML`);
+            const fallback = {
+                headshot: this.DEFAULT_PHOTO,
+                fullBody: this.DEFAULT_PHOTO,
+                timestamp: Date.now() - (this.cacheTTL * 0.9), // Cache mais curto para tentar novamente
+                error: 'no_images_found'
+            };
+            this.photoCache[cacheKey] = fallback;
+            this.saveCache();
+            return fallback;
+        }
+
+        // Resultado final
         const result = {
             headshot: headshotUrl || this.DEFAULT_PHOTO,
             fullBody: fullBodyUrl || headshotUrl || this.DEFAULT_PHOTO,
             timestamp: Date.now()
         };
 
-        // 4️⃣ Salvar cache
         this.photoCache[cacheKey] = result;
         this.saveCache();
 
         this.log(`✅ Found photos for ${fighter.name}`);
+        this.log(`   Headshot: ${headshotUrl ? '✓' : '✗'}`);
+        this.log(`   Full body: ${fullBodyUrl ? '✓' : '✗'}`);
+        
         return result;
     },
 
@@ -218,21 +284,32 @@ const FighterPhotos = {
     },
 
     async loadPhotoIntoElement(fighter, imgElement) {
+        // Começa com foto padrão
         imgElement.src = this.DEFAULT_PHOTO;
         imgElement.alt = fighter.name;
         imgElement.loading = 'lazy';
         imgElement.decoding = 'async';
         imgElement.classList.add('loading');
-        imgElement.onerror = () => imgElement.src = this.DEFAULT_PHOTO;
+        
+        // Fallback se a imagem falhar
+        imgElement.onerror = () => {
+            imgElement.src = this.DEFAULT_PHOTO;
+            imgElement.classList.remove('loading');
+        };
 
         try {
             const photos = await this.getFighterPhotos(fighter);
-            imgElement.src = photos.headshot;
-            imgElement.alt = fighter.name;
-            imgElement.classList.remove('loading');
-            imgElement.classList.add('loaded');
+            
+            // Só atualiza se conseguiu uma foto real (não default)
+            if (photos.headshot !== this.DEFAULT_PHOTO) {
+                imgElement.src = photos.headshot;
+                imgElement.classList.remove('loading');
+                imgElement.classList.add('loaded');
+            } else {
+                imgElement.classList.remove('loading');
+            }
         } catch (error) {
-            console.error('Error loading photo:', error);
+            console.error(`Error loading photo for ${fighter.name}:`, error);
             imgElement.src = this.DEFAULT_PHOTO;
             imgElement.classList.remove('loading');
         }
