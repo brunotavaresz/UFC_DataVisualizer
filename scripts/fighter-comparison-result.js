@@ -621,168 +621,264 @@ const FighterComparisonResult = {
         
         this.drawDualRadar('#radar-grappling', data1, data2, '#3b82f6', '#d91c1c');
     },
+
+    radarTooltips: {
+    striking: {
+        SLPM: "💥 <strong>SPLM</strong>: Strikes Landed per Minute<br>Average offensive output per minute.",
+        SA: "🎯 <strong>SA</strong>: Striking Accuracy (%)<br>Shows precision and efficiency.",
+        SD: "🛡️ <strong>SD</strong>: Striking Defense (%)<br>Percentage of strikes avoided.",
+        SAPM: "🧱 <strong>SAPM</strong>: Strikes Absorbed per Minute<br>Lower = better defense."
+    },
+    grappling: {
+        TD_AVG: "🤼 <strong>TD Avg</strong>: Average takedowns per 15min<br>Measures wrestling effectiveness.",
+        TA: "🎯 <strong>TA</strong>: Takedown Accuracy (%)<br>Shows success rate of takedown attempts.",
+        TD: "🛡️ <strong>TD</strong>: Takedown Defense (%)<br>Ability to stop opponent’s takedowns.",
+        Sub_AVG: "🔒 <strong>Sub Avg</strong>: Submissions per 15min<br>Shows submission activity and threat."
+    }
+},
     
     drawDualRadar(selector, data1, data2, color1, color2) {
-        const width = 400;
-        const height = 400;
-        const margin = 80;
-        const radius = Math.min(width, height) / 2 - margin;
-        const levels = 5;
+    const width = 400;
+    const height = 400;
+    const margin = 80;
+    const radius = Math.min(width, height) / 2 - margin;
+    const levels = 5;
+    
+    const svg = d3.select(selector);
+    svg.selectAll('*').remove();
+    
+    const svgEl = svg.append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    const g = svgEl.append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`);
+    
+    // Draw concentric circles
+    for (let i = 1; i <= levels; i++) {
+        g.append('circle')
+            .attr('r', (radius / levels) * i)
+            .attr('fill', 'none')
+            .attr('stroke', '#333')
+            .attr('stroke-width', 1);
         
-        const svg = d3.select(selector);
-        svg.selectAll('*').remove();
-        
-        const svgEl = svg.append('svg')
-            .attr('width', width)
-            .attr('height', height);
-        
-        const g = svgEl.append('g')
-            .attr('transform', `translate(${width/2},${height/2})`);
-        
-        // Draw concentric circles
-        for (let i = 1; i <= levels; i++) {
-            g.append('circle')
-                .attr('r', (radius / levels) * i)
-                .attr('fill', 'none')
-                .attr('stroke', '#333')
-                .attr('stroke-width', 1);
-            
-            // Add level labels
-            if (i === levels) {
-                const levelValues = [0, 20, 40, 60, 80, 100];
-                for (let j = 0; j < levels; j++) {
-                    const r = (radius / levels) * (j + 1);
-                    g.append('text')
-                        .attr('x', 5)
-                        .attr('y', -r)
-                        .attr('fill', '#666')
-                        .attr('font-size', '10px')
-                        .text(levelValues[j + 1]);
-                }
+        if (i === levels) {
+            const levelValues = [0, 20, 40, 60, 80, 100];
+            for (let j = 0; j < levels; j++) {
+                const r = (radius / levels) * (j + 1);
+                g.append('text')
+                    .attr('x', 5)
+                    .attr('y', -r)
+                    .attr('fill', '#666')
+                    .attr('font-size', '10px')
+                    .text(levelValues[j + 1]);
             }
         }
-        
-        const angleSlice = (Math.PI * 2) / data1.length;
-        
-        // Draw axes and labels
-        data1.forEach((d, i) => {
-            const angle = angleSlice * i - Math.PI / 2;
-            const x = radius * Math.cos(angle);
-            const y = radius * Math.sin(angle);
-            
-            g.append('line')
-                .attr('x1', 0)
-                .attr('y1', 0)
-                .attr('x2', x)
-                .attr('y2', y)
-                .attr('stroke', '#444')
-                .attr('stroke-width', 1);
-            
-            const labelRadius = radius + 30;
-            const labelX = labelRadius * Math.cos(angle);
-            const labelY = labelRadius * Math.sin(angle);
-            
-            g.append('text')
-                .attr('x', labelX)
-                .attr('y', labelY)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('fill', '#fff')
-                .attr('font-size', '12px')
-                .attr('font-weight', '600')
-                .text(d.axis);
-        });
-        
-        // Draw fighter 1 radar
-        const lineGenerator1 = d3.lineRadial()
-            .angle((d, i) => angleSlice * i)
-            .radius(d => (d.value / 100) * radius)
-            .curve(d3.curveLinearClosed);
-        
-        g.append('path')
-            .datum(data1)
-            .attr('d', lineGenerator1)
-            .attr('fill', color1)
-            .attr('fill-opacity', 0.25)
-            .attr('stroke', color1)
-            .attr('stroke-width', 3);
-        
-        // Draw fighter 2 radar
-        const lineGenerator2 = d3.lineRadial()
-            .angle((d, i) => angleSlice * i)
-            .radius(d => (d.value / 100) * radius)
-            .curve(d3.curveLinearClosed);
-        
-        g.append('path')
-            .datum(data2)
-            .attr('d', lineGenerator2)
-            .attr('fill', color2)
-            .attr('fill-opacity', 0.25)
-            .attr('stroke', color2)
-            .attr('stroke-width', 3);
-        
-        // Add points for fighter 1
-        data1.forEach((d, i) => {
-            const angle = angleSlice * i - Math.PI / 2;
-            const r = (d.value / 100) * radius;
-            const x = r * Math.cos(angle);
-            const y = r * Math.sin(angle);
-            
-            g.append('circle')
-                .attr('cx', x)
-                .attr('cy', y)
-                .attr('r', 5)
-                .attr('fill', color1)
-                .attr('stroke', 'white')
-                .attr('stroke-width', 2);
-        });
-        
-        // Add points for fighter 2
-        data2.forEach((d, i) => {
-            const angle = angleSlice * i - Math.PI / 2;
-            const r = (d.value / 100) * radius;
-            const x = r * Math.cos(angle);
-            const y = r * Math.sin(angle);
-            
-            g.append('circle')
-                .attr('cx', x)
-                .attr('cy', y)
-                .attr('r', 5)
-                .attr('fill', color2)
-                .attr('stroke', 'white')
-                .attr('stroke-width', 2);
-        });
-        
-        // Add legend
-        const legend = g.append('g')
-            .attr('transform', `translate(-${width/2 - 20}, ${height/2 - 60})`);
-        
-        legend.append('rect')
-            .attr('x', 0)
-            .attr('y', 0)
-            .attr('width', 15)
-            .attr('height', 15)
-            .attr('fill', color1);
-        
-        legend.append('text')
-            .attr('x', 20)
-            .attr('y', 12)
-            .attr('fill', '#fff')
-            .attr('font-size', '12px')
-            .text(this.fighter1.name.split(' ')[0]);
-        
-        legend.append('rect')
-            .attr('x', 0)
-            .attr('y', 25)
-            .attr('width', 15)
-            .attr('height', 15)
-            .attr('fill', color2);
-        
-        legend.append('text')
-            .attr('x', 20)
-            .attr('y', 37)
-            .attr('fill', '#fff')
-            .attr('font-size', '12px')
-            .text(this.fighter2.name.split(' ')[0]);
     }
+    
+    const angleSlice = (Math.PI * 2) / data1.length;
+    
+    // Draw axes and labels (sem tooltip)
+    data1.forEach((d, i) => {
+        const angle = angleSlice * i - Math.PI / 2;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        
+        g.append('line')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', x)
+            .attr('y2', y)
+            .attr('stroke', '#444')
+            .attr('stroke-width', 1);
+        
+        const labelRadius = radius + 30;
+        const labelX = labelRadius * Math.cos(angle);
+        const labelY = labelRadius * Math.sin(angle);
+        
+        g.append('text')
+            .attr('x', labelX)
+            .attr('y', labelY)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('fill', '#fff')
+            .attr('font-size', '12px')
+            .attr('font-weight', '600')
+            .text(d.axis);
+    });
+    
+    // Draw fighter 1 radar
+    const lineGenerator1 = d3.lineRadial()
+        .angle((d, i) => angleSlice * i)
+        .radius(d => (d.value / 100) * radius)
+        .curve(d3.curveLinearClosed);
+    
+    g.append('path')
+        .datum(data1)
+        .attr('d', lineGenerator1)
+        .attr('fill', color1)
+        .attr('fill-opacity', 0.25)
+        .attr('stroke', color1)
+        .attr('stroke-width', 3);
+    
+    // Draw fighter 2 radar
+    const lineGenerator2 = d3.lineRadial()
+        .angle((d, i) => angleSlice * i)
+        .radius(d => (d.value / 100) * radius)
+        .curve(d3.curveLinearClosed);
+    
+    g.append('path')
+        .datum(data2)
+        .attr('d', lineGenerator2)
+        .attr('fill', color2)
+        .attr('fill-opacity', 0.25)
+        .attr('stroke', color2)
+        .attr('stroke-width', 3);
+    
+    // Add points for fighter 1 (com tooltip)
+    data1.forEach((d, i) => {
+        const angle = angleSlice * i - Math.PI / 2;
+        const r = (d.value / 100) * radius;
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+        
+        const point = g.append('circle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', 6)
+            .attr('fill', color1)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer');
+        
+        const tooltipKey = d.axis;
+        const tooltipText = this.radarTooltips[
+            selector.includes('striking') ? 'striking' : 'grappling'
+        ][tooltipKey];
+        
+        if (tooltipText) {
+            point.on('mouseenter', (event) => {
+                point.attr('r', 8);
+                const tooltip = document.createElement('div');
+                tooltip.className = 'radar-tooltip';
+                tooltip.style.cssText = `
+                    position: fixed;
+                    top: ${event.clientY + 10}px;
+                    left: ${event.clientX + 10}px;
+                    background: rgba(0,0,0,0.9);
+                    color: #fff;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    font-size: 0.8rem;
+                    max-width: 240px;
+                    pointer-events: none;
+                    z-index: 9999;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                `;
+                tooltip.innerHTML = `${tooltipText}<br><strong>Valor: ${Math.round(d.value)}%</strong>`;
+                document.body.appendChild(tooltip);
+                
+                point.on('mousemove', e => {
+                    tooltip.style.top = `${e.clientY + 10}px`;
+                    tooltip.style.left = `${e.clientX + 10}px`;
+                });
+                
+                point.on('mouseleave', () => {
+                    tooltip.remove();
+                    point.attr('r', 6);
+                });
+            });
+        }
+    });
+    
+    // Add points for fighter 2 (com tooltip)
+    data2.forEach((d, i) => {
+        const angle = angleSlice * i - Math.PI / 2;
+        const r = (d.value / 100) * radius;
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+        
+        const point = g.append('circle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', 6)
+            .attr('fill', color2)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer');
+        
+        const tooltipKey = d.axis;
+        const tooltipText = this.radarTooltips[
+            selector.includes('striking') ? 'striking' : 'grappling'
+        ][tooltipKey];
+        
+        if (tooltipText) {
+            point.on('mouseenter', (event) => {
+                point.attr('r', 8);
+                const tooltip = document.createElement('div');
+                tooltip.className = 'radar-tooltip';
+                tooltip.style.cssText = `
+                    position: fixed;
+                    top: ${event.clientY + 10}px;
+                    left: ${event.clientX + 10}px;
+                    background: rgba(0,0,0,0.9);
+                    color: #fff;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    font-size: 0.8rem;
+                    max-width: 240px;
+                    pointer-events: none;
+                    z-index: 9999;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+                `;
+                tooltip.innerHTML = `${tooltipText}<br><strong>Valor: ${Math.round(d.value)}%</strong>`;
+                document.body.appendChild(tooltip);
+                
+                point.on('mousemove', e => {
+                    tooltip.style.top = `${e.clientY + 10}px`;
+                    tooltip.style.left = `${e.clientX + 10}px`;
+                });
+                
+                point.on('mouseleave', () => {
+                    tooltip.remove();
+                    point.attr('r', 6);
+                });
+            });
+        }
+    });
+    
+    // Add legend
+    const legend = g.append('g')
+        .attr('transform', `translate(-${width / 2 - 20}, ${height / 2 - 60})`);
+    
+    legend.append('rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', 15)
+        .attr('height', 15)
+        .attr('fill', color1);
+    
+    legend.append('text')
+        .attr('x', 20)
+        .attr('y', 12)
+        .attr('fill', '#fff')
+        .attr('font-size', '12px')
+        .text(this.fighter1.name.split(' ')[0]);
+    
+    legend.append('rect')
+        .attr('x', 0)
+        .attr('y', 25)
+        .attr('width', 15)
+        .attr('height', 15)
+        .attr('fill', color2);
+    
+    legend.append('text')
+        .attr('x', 20)
+        .attr('y', 37)
+        .attr('fill', '#fff')
+        .attr('font-size', '12px')
+        .text(this.fighter2.name.split(' ')[0]);
+}
 };
