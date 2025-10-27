@@ -13,6 +13,10 @@ const FighterDetails = {
         }
         
         Navigation.navigateTo('fighter-details');
+        
+        // SCROLL IMEDIATO para o topo
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        
         this.showLoadingState();
         
         await this.preloadFighterPhotos();
@@ -21,7 +25,11 @@ const FighterDetails = {
         this.renderModernLayout();
         
         this.hideLoadingState();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Garante que fica no topo após renderizar
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }, 50);
     },
     
     createTooltip() {
@@ -49,6 +57,132 @@ const FighterDetails = {
         `;
         document.body.appendChild(this.tooltip);
     },
+
+    createCompareButton(f) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 2px solid #d91c1c;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    `;
+    
+    // Efeito de brilho animado na border
+    const shine = document.createElement('div');
+    shine.style.cssText = `
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent,
+            rgba(217, 28, 28, 0.3),
+            transparent
+        );
+        transform: rotate(45deg);
+        animation: shine 3s infinite;
+    `;
+    container.appendChild(shine);
+    
+    // Ícone principal
+    const icon = document.createElement('div');
+    icon.style.cssText = `
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 0 8px rgba(217, 28, 28, 0.5));
+    `;
+    icon.textContent = '⚖️';
+    container.appendChild(icon);
+    
+    // Título
+    const title = document.createElement('h3');
+    title.style.cssText = `
+        color: #fff;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        position: relative;
+        z-index: 1;
+    `;
+    title.textContent = 'Compare Fighter';
+    container.appendChild(title);
+    
+    // Subtítulo
+    const subtitle = document.createElement('p');
+    subtitle.style.cssText = `
+        color: #888;
+        font-size: 0.9rem;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    `;
+    subtitle.textContent = 'See how they match up';
+    container.appendChild(subtitle);
+    
+    // Hover effects
+    container.addEventListener('mouseenter', (e) => {
+        container.style.transform = 'translateY(-5px) scale(1.02)';
+        container.style.boxShadow = '0 12px 40px rgba(217, 28, 28, 0.4)';
+        container.style.borderColor = '#ff4444';
+        container.style.background = '#242424';
+        this.showTooltip(
+            '⚖️ <strong>Compare Fighters</strong><br>Select another fighter to see a side-by-side comparison of stats, records, and performance metrics.',
+            e.clientX,
+            e.clientY
+        );
+    });
+    
+    container.addEventListener('mouseleave', () => {
+        container.style.transform = 'translateY(0) scale(1)';
+        container.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+        container.style.borderColor = '#d91c1c';
+        container.style.background = '#1a1a1a';
+        this.hideTooltip();
+    });
+    
+    container.addEventListener('mousemove', (e) => {
+        this.showTooltip(
+            '⚖️ <strong>Compare Fighters</strong><br>Select another fighter to see a side-by-side comparison of stats, records, and performance metrics.',
+            e.clientX,
+            e.clientY
+        );
+    });
+    
+    container.addEventListener('click', () => {
+        this.hideTooltip();
+        // Aqui você chama a função de comparação
+        // Exemplo: FighterComparison.startComparison(f.id);
+        console.log('Starting comparison for fighter:', f.id, f.name);
+        
+        // Feedback visual no clique
+        container.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            container.style.transform = 'translateY(-5px) scale(1.02)';
+        }, 100);
+    });
+    
+    // Adiciona a animação de brilho
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+    `;
+    container.appendChild(style);
+    
+    return container;
+},
     
     showTooltip(text, x, y) {
         this.tooltip.innerHTML = text;
@@ -182,6 +316,7 @@ const FighterDetails = {
         
         leftPanel.appendChild(this.createFighterCard(f));
         leftPanel.appendChild(this.createQuickStats(f));
+        leftPanel.appendChild(this.createCompareButton(f)); // ← ADICIONE AQUI
         leftPanel.appendChild(this.createPhysicalAttributes(f));
         
         const rightPanel = document.createElement('div');
@@ -260,37 +395,47 @@ const FighterDetails = {
         avatarContainer.appendChild(img);
         
         if (typeof FighterPhotos !== 'undefined') {
-            const cacheKey = f.id;
-            const cachedPhotos = FighterPhotos.photoCache[cacheKey];
-            
-            if (cachedPhotos && cachedPhotos.headshot) {
-                img.src = cachedPhotos.headshot;
-                img.addEventListener('click', () => {
-                    const fullBodyUrl = cachedPhotos.fullBody || cachedPhotos.headshot;
+    const cacheKey = f.id;
+    const cachedPhotos = FighterPhotos.photoCache[cacheKey];
+    
+    if (cachedPhotos && cachedPhotos.headshot) {
+        img.src = cachedPhotos.headshot;
+        img.addEventListener('click', () => {
+            const fullBodyUrl = cachedPhotos.fullBody || cachedPhotos.headshot;
+            this.showFullBodyModal(fullBodyUrl, f.name);
+        });
+    } else {
+        // Carrega a foto e adiciona o evento de click
+        FighterPhotos.loadPhotoIntoElement(f, img).then(() => {
+            // Após carregar, adiciona o click handler
+            img.addEventListener('click', () => {
+                const photos = FighterPhotos.photoCache[f.id];
+                if (photos) {
+                    const fullBodyUrl = photos.fullBody || photos.headshot;
                     this.showFullBodyModal(fullBodyUrl, f.name);
-                });
-            } else {
-                FighterPhotos.loadPhotoIntoElement(f, img);
-            }
-        } else {
-            const initials = f.name.split(' ').map(n => n[0]).join('');
-            avatarContainer.innerHTML = `
-                <div style="
-                    width: 200px;
-                    height: 200px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #d91c1c, #ff4444);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 64px;
-                    font-weight: bold;
-                    color: white;
-                    border: 4px solid #d91c1c;
-                    box-shadow: 0 8px 32px rgba(217, 28, 28, 0.4);
-                ">${initials}</div>
-            `;
-        }
+                }
+            });
+        });
+    }
+} else {
+    const initials = f.name.split(' ').map(n => n[0]).join('');
+    avatarContainer.innerHTML = `
+        <div style="
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d91c1c, #ff4444);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            font-weight: bold;
+            color: white;
+            border: 4px solid #d91c1c;
+            box-shadow: 0 8px 32px rgba(217, 28, 28, 0.4);
+        ">${initials}</div>
+    `;
+}
         
         card.appendChild(avatarContainer);
         
