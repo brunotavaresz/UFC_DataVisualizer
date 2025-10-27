@@ -591,25 +591,52 @@ const FighterComparison = {
         // Remove compare button
         const btn = document.getElementById('compare-btn-container');
         if (btn) btn.remove();
-        
-        Navigation.navigateTo('fighter-comparison-result');
-        
-        // TODO: Implement full comparison page
-        console.log('Comparing:', this.fighter1.name, 'vs', this.fighter2.name);
-        
-        // Placeholder for now
-        const page = document.getElementById('fighter-comparison-result');
-        page.innerHTML = `
-            <div style="text-align: center; padding: 4rem; color: white;">
-                <h1 style="font-size: 3rem; margin-bottom: 2rem;">
-                    ${this.fighter1.name} 
-                    <span style="color: #d91c1c;">VS</span> 
-                    ${this.fighter2.name}
-                </h1>
-                <p style="color: #888; font-size: 1.2rem;">
-                    Full comparison page coming next...
-                </p>
-            </div>
-        `;
+
+        // Ensure a second fighter was selected
+        if (!this.fighter2) {
+            console.error('No fighter selected for comparison');
+            return;
+        }
+
+        // If the full comparison module is available, delegate rendering to it.
+        // FighterComparisonResult.show handles navigation, loading state and rendering.
+        if (typeof FighterComparisonResult !== 'undefined' && typeof FighterComparisonResult.show === 'function') {
+            try {
+                FighterComparisonResult.show(this.fighter1, this.fighter2);
+            } catch (err) {
+                console.error('Error invoking FighterComparisonResult.show:', err);
+                // Fallback to simple navigation/placeholder if something fails
+                Navigation.navigateTo('fighter-comparison-result');
+                const page = document.getElementById('fighter-comparison-result');
+                page.innerHTML = `
+                    <div style="text-align: center; padding: 4rem; color: white;">
+                        <h1 style="font-size: 3rem; margin-bottom: 2rem;">
+                            ${this.fighter1.name} 
+                            <span style="color: #d91c1c;">VS</span> 
+                            ${this.fighter2.name}
+                        </h1>
+                        <p style="color: #888; font-size: 1.2rem;">
+                            Comparison module unavailable — fallback placeholder.
+                        </p>
+                    </div>
+                `;
+            }
+        } else {
+            // If module not present, navigate and show a lightweight placeholder
+            Navigation.navigateTo('fighter-comparison-result');
+            const page = document.getElementById('fighter-comparison-result');
+            page.innerHTML = `
+                <div style="text-align: center; padding: 4rem; color: white;">
+                    <h1 style="font-size: 3rem; margin-bottom: 2rem;">
+                        ${this.fighter1.name} 
+                        <span style="color: #d91c1c;">VS</span> 
+                        ${this.fighter2.name}
+                    </h1>
+                    <p style="color: #888; font-size: 1.2rem;">
+                        Comparison module not loaded. Make sure <code>fighter-comparison-result.js</code> is included.
+                    </p>
+                </div>
+            `;
+        }
     }
 };
