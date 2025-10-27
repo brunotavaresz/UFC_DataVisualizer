@@ -568,7 +568,8 @@ const FighterComparison = {
         });
         
         container.appendChild(button);
-        document.body.appendChild(container);
+        const page = document.getElementById('fighter-comparison-select');
+        page.appendChild(container);
         
         const style = document.createElement('style');
         style.textContent = `

@@ -41,6 +41,12 @@ const Navigation = {
                 link.classList.add('active');
             }
         });
+
+        // Remove compare button if navigating away from comparison pages
+        if (!pageName.includes('fighter-comparison')) {
+            const compareBtn = document.getElementById('compare-btn-container');
+            if (compareBtn) compareBtn.remove();
+        }
         
         this.currentPage = pageName;
         
