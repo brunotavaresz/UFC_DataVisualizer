@@ -1,0 +1,325 @@
+// Events Map Module - Each event is a point on the map
+const EventsMap = {
+    map: null,
+    markersLayer: null,
+    eventsData: [],
+    groupedEvents: [],
+    isInitialized: false,
+    geocodeCache: {},
+
+    async init() {
+        if (this.isInitialized) {
+            console.log('EventsMap already initialized, resizing map...');
+            if (this.map) {
+                setTimeout(() => {
+                    this.map.invalidateSize();
+                    console.log('Map resized');
+                }, 100);
+            }
+            return;
+        }
+
+        console.log('Initializing Events Map...');
+        
+        try {
+            if (typeof L === 'undefined') {
+                console.error('❌ Leaflet library not loaded!');
+                alert('Leaflet map library not loaded. Please check your internet connection.');
+                return;
+            }
+            console.log('✅ Leaflet loaded');
+            
+            await this.loadEvents();
+            this.initMap();
+            this.showAllEvents();
+            this.setupControls();
+            
+            this.isInitialized = true;
+            console.log('✅ Events Map initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing Events Map:', error);
+        }
+    },
+
+    async loadEvents() {
+        try {
+            if (DataLoader.events && DataLoader.events.length > 0) {
+                this.eventsData = DataLoader.events;
+                console.log('Using pre-loaded events data');
+            } else {
+                console.log('Loading events from CSV...');
+                this.eventsData = await d3.csv('data/event_details.csv');
+            }
+            
+            this.eventsData.forEach(event => {
+                const parts = event.location.split(',').map(s => s.trim());
+                event.city = parts[0] || '';
+                event.region = parts[1] || '';
+                event.country = parts[2] || parts[1] || '';
+            });
+
+            const eventGroups = d3.group(this.eventsData, d => d.event_id);
+            
+            this.groupedEvents = Array.from(eventGroups, ([eventId, fights]) => {
+                const firstFight = fights[0];
+                return {
+                    event_id: eventId,
+                    date: firstFight.date,
+                    location: firstFight.location,
+                    city: firstFight.city,
+                    region: firstFight.region,
+                    country: firstFight.country,
+                    fightCount: fights.length,
+                    fights: fights
+                };
+            });
+
+            this.groupedEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const countries = new Set(this.groupedEvents.map(e => e.country));
+            const cities = new Set(this.groupedEvents.map(e => `${e.city}, ${e.country}`));
+            
+            const countriesEl = document.getElementById('total-countries');
+            const citiesEl = document.getElementById('total-cities');
+            const eventsEl = document.getElementById('total-events-map');
+            
+            if (countriesEl) countriesEl.textContent = countries.size;
+            if (citiesEl) citiesEl.textContent = cities.size;
+            if (eventsEl) eventsEl.textContent = this.groupedEvents.length;
+            
+            console.log(`✅ Loaded ${this.groupedEvents.length} unique events`);
+        } catch (error) {
+            console.error('❌ Error loading events:', error);
+            throw error;
+        }
+    },
+
+    initMap() {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('❌ Map element not found!');
+            return;
+        }
+
+        console.log('Creating Leaflet map...');
+        
+        if (this.map) {
+            this.map.remove();
+        }
+
+        try {
+            this.map = L.map('map', {
+                zoomControl: true,
+                scrollWheelZoom: true,
+                doubleClickZoom: true,
+                touchZoom: true
+            }).setView([20, 0], 2);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18,
+                minZoom: 2
+            }).addTo(this.map);
+
+            this.markersLayer = L.layerGroup().addTo(this.map);
+            
+            console.log('✅ Leaflet map created successfully');
+            
+            setTimeout(() => {
+                if (this.map) {
+                    this.map.invalidateSize();
+                    console.log('Map size invalidated and refreshed');
+                }
+            }, 300);
+        } catch (error) {
+            console.error('❌ Error creating map:', error);
+        }
+    },
+
+    async showAllEvents() {
+        console.log('Showing all events on map...');
+        
+        if (!this.markersLayer) {
+            console.error('Markers layer not initialized');
+            return;
+        }
+        
+        this.markersLayer.clearLayers();
+
+        let markersAdded = 0;
+        let geocodingNeeded = 0;
+
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'map-loading';
+        loadingDiv.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; z-index: 1000;';
+        loadingDiv.textContent = 'Loading events on map...';
+        document.querySelector('.map-container').appendChild(loadingDiv);
+
+        for (let i = 0; i < this.groupedEvents.length; i++) {
+            const event = this.groupedEvents[i];
+            const locationKey = `${event.city}, ${event.country}`;
+
+            if (this.geocodeCache[locationKey]) {
+                this.addEventMarker(event, this.geocodeCache[locationKey]);
+                markersAdded++;
+            } else {
+                geocodingNeeded++;
+                try {
+                    const coords = await this.geocodeLocation(event.city, event.country);
+                    if (coords) {
+                        this.geocodeCache[locationKey] = coords;
+                        this.addEventMarker(event, coords);
+                        markersAdded++;
+                    }
+                    if (geocodingNeeded % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                } catch (error) {
+                    console.error(`Error geocoding ${locationKey}:`, error);
+                }
+            }
+
+            if (i % 10 === 0) {
+                loadingDiv.textContent = `Loading events: ${i + 1}/${this.groupedEvents.length}`;
+            }
+        }
+
+        loadingDiv.remove();
+
+        console.log(`✅ Added ${markersAdded} event markers`);
+
+        if (markersAdded > 0) {
+            const bounds = this.markersLayer.getBounds();
+            if (bounds.isValid()) {
+                this.map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        setTimeout(() => {
+            if (this.map) this.map.invalidateSize();
+        }, 200);
+    },
+
+    async geocodeLocation(city, country) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ', ' + country)}&limit=1`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data[0]) {
+                return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            }
+            return null;
+        } catch (error) {
+            console.error('Geocoding error:', error);
+            return null;
+        }
+    },
+
+    addEventMarker(event, coords) {
+        const marker = L.circleMarker(coords, {
+            radius: 8,
+            fillColor: '#d91c1c',
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(this.markersLayer);
+
+        const eventDate = new Date(event.date);
+        const formattedDate = eventDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+
+        marker.bindPopup(`
+            <div class="popup-title">${event.location}</div>
+            <div style="color: #888; font-size: 0.9rem; margin: 0.5rem 0;">${formattedDate}</div>
+            <div class="popup-count">${event.fightCount} fight${event.fightCount > 1 ? 's' : ''}</div>
+            <button 
+                onclick="EventsMap.showEventDetails('${event.event_id}')" 
+                style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #d91c1c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;"
+            >
+                View Event Details
+            </button>
+        `);
+
+        marker.on('mouseover', function() {
+            this.setStyle({
+                radius: 12,
+                fillOpacity: 1
+            });
+        });
+
+        marker.on('mouseout', function() {
+            this.setStyle({
+                radius: 8,
+                fillOpacity: 0.8
+            });
+        });
+    },
+
+    showEventDetails(eventId) {
+        console.log(`Showing details for event: ${eventId}`);
+        
+        const event = this.groupedEvents.find(e => e.event_id === eventId);
+        if (!event) {
+            console.error('Event not found:', eventId);
+            return;
+        }
+
+        window.currentEventDetails = event;
+
+        if (typeof Navigation !== 'undefined') {
+            Navigation.navigateTo('event-details');
+        } else {
+            console.error('Navigation module not found');
+        }
+    },
+
+    setupControls() {
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                console.log('Reset button clicked');
+                this.map.setView([20, 0], 2);
+            });
+        }
+
+        const searchInput = document.getElementById('event-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterEvents(e.target.value);
+            });
+        }
+    },
+
+    filterEvents(searchTerm) {
+        if (!searchTerm) {
+            this.showAllEvents();
+            return;
+        }
+
+        const term = searchTerm.toLowerCase();
+        const filtered = this.groupedEvents.filter(event => 
+            event.location.toLowerCase().includes(term) ||
+            event.city.toLowerCase().includes(term) ||
+            event.country.toLowerCase().includes(term) ||
+            event.date.includes(term)
+        );
+
+        this.markersLayer.clearLayers();
+
+        filtered.forEach(event => {
+            const locationKey = `${event.city}, ${event.country}`;
+            const coords = this.geocodeCache[locationKey];
+            if (coords) {
+                this.addEventMarker(event, coords);
+            }
+        });
+
+        console.log(`Filtered to ${filtered.length} events`);
+    }
+};

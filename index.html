@@ -1,3 +1,6 @@
+<!-- ============================================
+     FILE 1: index.html (COMPLETO)
+     ============================================ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +8,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UFC Data Visualizer (1994-2025)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -210,22 +216,107 @@
     <!-- Fighter Comparison Result Page -->
     <div id="fighter-comparison-result" class="page"></div>
 
-    <!-- Events Page -->
-    <div id="events" class="page">
-        <h2 class="page-title">Events & Fights History</h2>
-        <p class="page-subtitle">Discover UFC history through events and memorable fights</p>
-        <!-- To be implemented -->
+    <!-- Events Page with Map -->
+<div id="events" class="page">
+    <h2 class="page-title">Events & Fights History</h2>
+    <p class="page-subtitle">Discover UFC history through events and memorable fights worldwide</p>
+    
+    <div class="stats-summary">
+        <div class="stat-box">
+            <div class="stat-number" id="total-countries">-</div>
+            <div class="stat-label">Countries</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" id="total-cities">-</div>
+            <div class="stat-label">Cities</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number" id="total-events-map">-</div>
+            <div class="stat-label">Total Events</div>
+        </div>
     </div>
 
+    <div class="controls">
+        <div class="filter-group" style="flex: 1;">
+            <input type="text" id="event-search" placeholder="Search events by location, city, or date...">
+        </div>
+        <button class="btn" id="reset-btn">Reset View</button>
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+</div>
+
+<!-- Event Details Page -->
+<div id="event-details" class="page">
+    <button id="back-to-events" class="btn-back">← Back to Events Map</button>
+    
+    <div class="event-detail-header">
+        <h1 id="event-detail-title">Event Name</h1>
+        <div class="event-detail-info">
+            <div class="info-item">
+                <span class="info-label">📅 Date:</span>
+                <span id="event-detail-date">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">📍 Location:</span>
+                <span id="event-detail-location">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">🥊 Total Fights:</span>
+                <span id="event-fight-count">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="event-statistics" id="event-statistics">
+        <!-- Statistics will be populated by JS -->
+    </div>
+
+    <div class="event-charts-grid">
+        <div class="chart-card">
+            <h3>Finish Methods</h3>
+            <div id="methods-chart"></div>
+        </div>
+        <div class="chart-card">
+            <h3>Weight Classes</h3>
+            <div id="weight-classes-chart"></div>
+        </div>
+    </div>
+
+    <div class="fights-table-container">
+        <h3>Fight Card</h3>
+        <table class="fights-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Winner</th>
+                    <th>Loser</th>
+                    <th>Weight Class</th>
+                    <th>Method</th>
+                    <th>Round</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="event-fights-tbody">
+                <!-- Populated by JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
     <!-- Scripts -->
-    <script src="scripts/utils.js"></script>
-    <script src="scripts/data-loader.js"></script>
-    <script src="scripts/fighter-photos.js"></script> <!-- NOVO! -->
-    <script src="scripts/fighter-comparison-result.js"></script>
-    <script src="scripts/fighter-comparison.js"></script>
-    <script src="scripts/fighters-table.js"></script>
-    <script src="scripts/fighter-details.js"></script>
-    <script src="scripts/navigation.js"></script>
-    <script src="scripts/main.js"></script>
+    <!-- Scripts -->
+<script src="scripts/utils.js"></script>
+<script src="scripts/data-loader.js"></script>
+<script src="scripts/fighter-photos.js"></script>
+<script src="scripts/fighter-comparison-result.js"></script>
+<script src="scripts/fighter-comparison.js"></script>
+<script src="scripts/fighters-table.js"></script>
+<script src="scripts/fighter-details.js"></script>
+<script src="scripts/events-map.js"></script>
+<script src="scripts/navigation.js"></script>
+<script src="scripts/main.js"></script>
 </body>
 </html>

@@ -10,8 +10,8 @@ const DataLoader = {
         try {
             await Promise.all([
                 this.loadFighters(),
-                // this.loadEvents(),
-                // this.loadFights()
+                this.loadEvents(),
+                this.loadFights()
             ]);
             console.log('All data loaded successfully');
             return true;
@@ -57,7 +57,7 @@ const DataLoader = {
         }
     },
     
-    // Load events (placeholder for future)
+    // Load events
     async loadEvents() {
         try {
             const data = await d3.csv('data/event_details.csv');
@@ -69,7 +69,7 @@ const DataLoader = {
         }
     },
     
-    // Load fights (placeholder for future)
+    // Load fights
     async loadFights() {
         try {
             const data = await d3.csv('data/fight_details.csv');
