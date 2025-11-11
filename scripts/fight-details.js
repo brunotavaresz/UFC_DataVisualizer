@@ -163,7 +163,7 @@ const FightDetails = {
 
         const width = container.clientWidth || 400;
         const height = 300;
-        const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+        const margin = { top: 30, right: 30, bottom: 60, left: 60 };
 
         const svg = d3.select(container)
             .html('')
@@ -174,12 +174,12 @@ const FightDetails = {
         const x0 = d3.scaleBand()
             .domain(data.map(d => d.fighter))
             .range([margin.left, width - margin.right])
-            .padding(0.2);
+            .padding(0.3);
 
         const x1 = d3.scaleBand()
             .domain(['landed', 'attempted'])
             .range([0, x0.bandwidth()])
-            .padding(0.05);
+            .padding(0.15);
 
         const y = d3.scaleLinear()
             .domain([0, d3.max(data, d => Math.max(d.landed, d.attempted))])
@@ -366,8 +366,8 @@ const FightDetails = {
         ];
 
         const width = container.clientWidth || 400;
-        const height = 250;
-        const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+        const height = 300;
+        const margin = { top: 30, right: 30, bottom: 60, left: 60 };
 
         const svg = d3.select(container)
             .html('')
@@ -378,12 +378,12 @@ const FightDetails = {
         const x0 = d3.scaleBand()
             .domain(data.map(d => d.fighter))
             .range([margin.left, width - margin.right])
-            .padding(0.2);
+            .padding(0.3);
 
         const x1 = d3.scaleBand()
             .domain(['landed', 'attempted'])
             .range([0, x0.bandwidth()])
-            .padding(0.05);
+            .padding(0.15);
 
         const y = d3.scaleLinear()
             .domain([0, d3.max(data, d => Math.max(d.landed, d.attempted)) || 1])

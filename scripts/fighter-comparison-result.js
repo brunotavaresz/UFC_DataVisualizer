@@ -463,85 +463,153 @@ const FighterComparisonResult = {
             border-collapse: collapse;
         `;
         
-        // Header
+        let currentSortedData = statsData;
+        
+        // Function to render table body
+        const renderTableBody = (data) => {
+            tbody.innerHTML = '';
+            data.forEach((stat, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `
+                    border-bottom: 1px solid #2d2d2d;
+                    transition: background 0.2s ease;
+                `;
+                
+                row.addEventListener('mouseenter', () => {
+                    row.style.background = 'rgba(217, 28, 28, 0.05)';
+                });
+                
+                row.addEventListener('mouseleave', () => {
+                    row.style.background = 'transparent';
+                });
+                
+                const val1 = parseFloat(stat.value1);
+                const val2 = parseFloat(stat.value2);
+                const diff = parseFloat(stat.diff);
+                
+                let winner1 = false;
+                let winner2 = false;
+                
+                if (stat.lowerIsBetter) {
+                    winner1 = val1 < val2;
+                    winner2 = val2 < val1;
+                } else {
+                    winner1 = val1 > val2;
+                    winner2 = val2 > val1;
+                }
+                
+                row.innerHTML = `
+                    <td style="
+                        padding: 1rem;
+                        text-align: center;
+                        color: ${winner1 ? '#4ade80' : '#fff'};
+                        font-weight: ${winner1 ? '700' : '400'};
+                        font-size: 1.2rem;
+                        background: ${winner1 ? 'rgba(74, 222, 128, 0.1)' : 'transparent'};
+                    ">${stat.value1}</td>
+                    <td style="
+                        padding: 1rem;
+                        text-align: center;
+                        color: #888;
+                        font-size: 0.9rem;
+                    ">${stat.label}</td>
+                    <td style="
+                        padding: 1rem;
+                        text-align: center;
+                        color: ${diff > 0 ? '#4ade80' : diff < 0 ? '#ef4444' : '#888'};
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                    ">${diff > 0 ? '+' : ''}${diff}</td>
+                    <td style="
+                        padding: 1rem;
+                        text-align: center;
+                        color: ${winner2 ? '#4ade80' : '#fff'};
+                        font-weight: ${winner2 ? '700' : '400'};
+                        font-size: 1.2rem;
+                        background: ${winner2 ? 'rgba(74, 222, 128, 0.1)' : 'transparent'};
+                    ">${stat.value2}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        };
+        
+        // Header with sorting
         const thead = document.createElement('thead');
-        thead.innerHTML = `
-            <tr style="border-bottom: 2px solid #333;">
-                <th style="padding: 1rem; text-align: center; color: #3b82f6; font-size: 1.1rem;">${f1.name.split(' ')[0]}</th>
-                <th style="padding: 1rem; text-align: center; color: #fff; font-size: 1.1rem;">Stats</th>
-                <th style="padding: 1rem; text-align: center; color: #888; font-size: 0.9rem;">Diff</th>
-                <th style="padding: 1rem; text-align: center; color: #d91c1c; font-size: 1.1rem;">${f2.name.split(' ')[0]}</th>
-            </tr>
-        `;
+        const headerRow = document.createElement('tr');
+        headerRow.style.borderBottom = '2px solid #333';
+        
+        const headers = [
+            { text: f1.name.split(' ')[0], color: '#3b82f6', sortKey: 'value1' },
+            { text: 'Stats', color: '#fff', sortKey: null },
+            { text: 'Diff', color: '#888', sortKey: 'diff' },
+            { text: f2.name.split(' ')[0], color: '#d91c1c', sortKey: 'value2' }
+        ];
+        
+        let currentSort = { key: null, ascending: true };
+        
+        headers.forEach((header, headerIndex) => {
+            const th = document.createElement('th');
+            th.style.cssText = `
+                padding: 1rem;
+                text-align: center;
+                color: ${header.color};
+                font-size: 1.1rem;
+                cursor: ${header.sortKey ? 'pointer' : 'default'};
+                user-select: none;
+                transition: color 0.2s ease;
+            `;
+            th.textContent = header.text;
+            
+            if (header.sortKey) {
+                th.addEventListener('mouseenter', () => {
+                    th.style.color = '#d91c1c';
+                });
+                
+                th.addEventListener('mouseleave', () => {
+                    th.style.color = header.color;
+                });
+                
+                th.addEventListener('click', () => {
+                    if (currentSort.key === header.sortKey) {
+                        currentSort.ascending = !currentSort.ascending;
+                    } else {
+                        currentSort.key = header.sortKey;
+                        currentSort.ascending = false;
+                    }
+                    
+                    // Update all headers
+                    headers.forEach((h, idx) => {
+                        const thElement = headerRow.children[idx];
+                        if (h.sortKey === currentSort.key) {
+                            thElement.textContent = h.text + (currentSort.ascending ? ' ↑' : ' ↓');
+                        } else if (h.sortKey) {
+                            thElement.textContent = h.text;
+                        }
+                    });
+                    
+                    // Sort data
+                    currentSortedData = [...statsData].sort((a, b) => {
+                        const valA = parseFloat(a[currentSort.key]);
+                        const valB = parseFloat(b[currentSort.key]);
+                        return currentSort.ascending ? valA - valB : valB - valA;
+                    });
+                    
+                    renderTableBody(currentSortedData);
+                });
+            }
+            
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
         table.appendChild(thead);
         
         // Body
         const tbody = document.createElement('tbody');
-        statsData.forEach((stat, index) => {
-            const row = document.createElement('tr');
-            row.style.cssText = `
-                border-bottom: 1px solid #2d2d2d;
-                transition: background 0.2s ease;
-            `;
-            
-            row.addEventListener('mouseenter', () => {
-                row.style.background = 'rgba(217, 28, 28, 0.05)';
-            });
-            
-            row.addEventListener('mouseleave', () => {
-                row.style.background = 'transparent';
-            });
-            
-            // Determine which value is better
-            const val1 = parseFloat(stat.value1);
-            const val2 = parseFloat(stat.value2);
-            const diff = parseFloat(stat.diff);
-            
-            let winner1 = false;
-            let winner2 = false;
-            
-            if (stat.lowerIsBetter) {
-                winner1 = val1 < val2;
-                winner2 = val2 < val1;
-            } else {
-                winner1 = val1 > val2;
-                winner2 = val2 > val1;
-            }
-            
-            row.innerHTML = `
-                <td style="
-                    padding: 1rem;
-                    text-align: center;
-                    color: ${winner1 ? '#4ade80' : '#fff'};
-                    font-weight: ${winner1 ? '700' : '400'};
-                    font-size: 1.2rem;
-                    background: ${winner1 ? 'rgba(74, 222, 128, 0.1)' : 'transparent'};
-                ">${stat.value1}</td>
-                <td style="
-                    padding: 1rem;
-                    text-align: center;
-                    color: #888;
-                    font-size: 0.9rem;
-                ">${stat.label}</td>
-                <td style="
-                    padding: 1rem;
-                    text-align: center;
-                    color: ${diff > 0 ? '#4ade80' : diff < 0 ? '#ef4444' : '#888'};
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                ">${diff > 0 ? '+' : ''}${diff}</td>
-                <td style="
-                    padding: 1rem;
-                    text-align: center;
-                    color: ${winner2 ? '#4ade80' : '#fff'};
-                    font-weight: ${winner2 ? '700' : '400'};
-                    font-size: 1.2rem;
-                    background: ${winner2 ? 'rgba(74, 222, 128, 0.1)' : 'transparent'};
-                ">${stat.value2}</td>
-            `;
-            
-            tbody.appendChild(row);
-        });
+        
+        // Initial render
+        renderTableBody(statsData);
         
         table.appendChild(tbody);
         container.appendChild(table);
