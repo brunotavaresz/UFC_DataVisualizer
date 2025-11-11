@@ -33,10 +33,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ Data loaded successfully');
     console.log(`Fighters loaded: ${DataLoader.fighters.length}`);
 
+    // Count unique events from event_details
+    const uniqueEvents = new Set(DataLoader.events.map(e => e.event_id));
+    
     // Update landing page stats
     updateLandingStats(
         DataLoader.fighters.length,
-        DataLoader.events.length,
+        uniqueEvents.size,
         DataLoader.fights.length
     );
 

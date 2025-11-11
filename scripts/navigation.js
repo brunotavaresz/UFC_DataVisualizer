@@ -22,6 +22,9 @@ const Navigation = {
     },
 
     navigateTo(pageName) {
+        // Reset scroll to top for smooth transition
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');

@@ -62,7 +62,7 @@ const DataLoader = {
         try {
             const data = await d3.csv('data/event_details.csv');
             this.events = data;
-            console.log(`Loaded ${this.events.length} events`);
+            console.log(`Loaded ${this.events.length} event rows`);
         } catch (error) {
             console.error('Error loading events:', error);
             this.events = [];

@@ -307,15 +307,79 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Fight Detail Modal -->
-    <div id="fight-detail-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h2 id="fight-modal-title">Fight Details</h2>
-            <div id="fight-modal-body">
-                <!-- Populated by JS -->
+<!-- Fight Details Page -->
+<div id="fight-details" class="page">
+    <button id="back-to-event" class="btn-back">← Back to Event</button>
+    
+    <div class="fight-detail-header">
+        <h1 id="fight-detail-title">Fighter 1 vs Fighter 2</h1>
+        <div class="fight-detail-info">
+            <div class="info-item">
+                <span class="info-label">📅 Event:</span>
+                <span id="fight-event-name">-</span>
             </div>
+            <div class="info-item">
+                <span class="info-label">⚖️ Division:</span>
+                <span id="fight-division">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">🏆 Method:</span>
+                <span id="fight-method">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">⏱️ Time:</span>
+                <span id="fight-time">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="fight-visualization-grid">
+        <!-- Top Row: Fighter Cards -->
+        <div class="fighter-card red-corner">
+            <h3>🔴 <span id="red-fighter-name">Red Corner</span></h3>
+            <div id="red-fighter-stats" class="fighter-quick-stats"></div>
+        </div>
+        
+        <div class="fighter-card blue-corner">
+            <h3>🔵 <span id="blue-fighter-name">Blue Corner</span></h3>
+            <div id="blue-fighter-stats" class="fighter-quick-stats"></div>
+        </div>
+
+        <!-- Strikes Comparison -->
+        <div class="chart-container">
+            <h3>Strikes (Landed / Attempted)</h3>
+            <div id="strikes-comparison-chart"></div>
+        </div>
+
+        <!-- Takedowns Comparison -->
+        <div class="chart-container">
+            <h3>Takedowns (Landed / Attempted)</h3>
+            <div id="takedowns-chart"></div>
+        </div>
+
+        <!-- Strikes by Target (Pie Charts) -->
+        <div class="chart-container full-width">
+            <h3>Strikes by Target (Head, Body, Leg)</h3>
+            <div id="strikes-target-charts" class="pie-charts-grid"></div>
+        </div>
+
+        <!-- Control Time & Submissions -->
+        <div class="chart-container">
+            <h3>Control Time</h3>
+            <div id="control-time-chart"></div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Submission Attempts</h3>
+            <div id="submissions-chart"></div>
+        </div>
+
+        <!-- Performance Comparison (Scatter) -->
+        <div class="chart-container full-width">
+            <h3>Performance Comparison</h3>
+            <div id="performance-scatter"></div>
         </div>
     </div>
 </div>
@@ -331,6 +395,7 @@
 <script src="scripts/fighter-details.js"></script>
 <script src="scripts/events-map.js"></script>
 <script src="scripts/event-details.js"></script>
+<script src="scripts/fight-details.js"></script>
 <script src="scripts/navigation.js"></script>
 <script src="scripts/main.js"></script>
 </body>

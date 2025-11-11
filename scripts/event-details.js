@@ -18,7 +18,6 @@ const EventDetails = {
         this.populateHeader();
         this.populateWinners();
         this.populateFightsTable();
-        this.setupModal();
         this.setupBackButton();
         
         console.log('✅ Event Details initialization complete');
@@ -207,138 +206,14 @@ const EventDetails = {
     },
 
     showFightDetails(fightId) {
-        const fightDetails = this.fightsData.find(f => f.fight_id === fightId);
-        if (!fightDetails) {
-            console.error('Fight details not found');
-            return;
+        console.log('Showing fight details:', fightId);
+        
+        // Navigate to fight details page
+        if (typeof FightDetails !== 'undefined') {
+            FightDetails.show(fightId, this.currentEvent);
+        } else {
+            console.error('FightDetails module not found');
         }
-
-        const modal = document.getElementById('fight-detail-modal');
-        const modalBody = document.getElementById('fight-modal-body');
-        const modalTitle = document.getElementById('fight-modal-title');
-
-        modalTitle.textContent = `${fightDetails.r_name} vs ${fightDetails.b_name}`;
-
-        modalBody.innerHTML = `
-            <div class="fight-modal-grid">
-                <div class="fighter-modal-section">
-                    <h3>🔴 ${fightDetails.r_name}</h3>
-                    <div class="modal-stats-grid">
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Knockdowns</span>
-                            <span class="modal-stat-value">${fightDetails.r_kd || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Sig. Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.r_sig_str_landed || 0}/${fightDetails.r_sig_str_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Strike Accuracy</span>
-                            <span class="modal-stat-value">${fightDetails.r_sig_str_acc || 0}%</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Takedowns</span>
-                            <span class="modal-stat-value">${fightDetails.r_td_landed || 0}/${fightDetails.r_td_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">TD Accuracy</span>
-                            <span class="modal-stat-value">${fightDetails.r_td_acc || 0}%</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Sub. Attempts</span>
-                            <span class="modal-stat-value">${fightDetails.r_sub_att || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Head Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.r_head_landed || 0}/${fightDetails.r_head_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Body Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.r_body_landed || 0}/${fightDetails.r_body_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Leg Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.r_leg_landed || 0}/${fightDetails.r_leg_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Control Time</span>
-                            <span class="modal-stat-value">${this.formatTime(fightDetails.r_ctrl)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="fighter-modal-section">
-                    <h3>🔵 ${fightDetails.b_name}</h3>
-                    <div class="modal-stats-grid">
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Knockdowns</span>
-                            <span class="modal-stat-value">${fightDetails.b_kd || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Sig. Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.b_sig_str_landed || 0}/${fightDetails.b_sig_str_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Strike Accuracy</span>
-                            <span class="modal-stat-value">${fightDetails.b_sig_str_acc || 0}%</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Takedowns</span>
-                            <span class="modal-stat-value">${fightDetails.b_td_landed || 0}/${fightDetails.b_td_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">TD Accuracy</span>
-                            <span class="modal-stat-value">${fightDetails.b_td_acc || 0}%</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Sub. Attempts</span>
-                            <span class="modal-stat-value">${fightDetails.b_sub_att || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Head Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.b_head_landed || 0}/${fightDetails.b_head_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Body Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.b_body_landed || 0}/${fightDetails.b_body_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Leg Strikes</span>
-                            <span class="modal-stat-value">${fightDetails.b_leg_landed || 0}/${fightDetails.b_leg_atmpted || 0}</span>
-                        </div>
-                        <div class="modal-stat-item">
-                            <span class="modal-stat-label">Control Time</span>
-                            <span class="modal-stat-value">${this.formatTime(fightDetails.b_ctrl)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 2rem; padding: 1rem; background: #2d2d2d; border-radius: 8px;">
-                <p><strong>Method:</strong> ${fightDetails.method}</p>
-                <p><strong>Round:</strong> ${fightDetails.finish_round} of ${fightDetails.total_rounds}</p>
-                <p><strong>Time:</strong> ${this.formatTime(fightDetails.match_time_sec)}</p>
-                <p><strong>Referee:</strong> ${fightDetails.referee || 'N/A'}</p>
-                <p><strong>Weight Class:</strong> ${fightDetails.division}</p>
-            </div>
-        `;
-
-        modal.style.display = 'block';
-    },
-
-    setupModal() {
-        const modal = document.getElementById('fight-detail-modal');
-        const closeBtn = document.querySelector('.modal-close');
-
-        closeBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
-
-        window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
     },
 
     setupBackButton() {
