@@ -2,10 +2,11 @@
 const EventsMap = {
     map: null,
     markersLayer: null,
+    markerClusterGroup: null,
     eventsData: [],
     groupedEvents: [],
     isInitialized: false,
-    geocodeCache: {},
+    coordinatesData: {},
 
     async init() {
         if (this.isInitialized) {
@@ -29,6 +30,7 @@ const EventsMap = {
             }
             console.log('✅ Leaflet loaded');
             
+            await this.loadCoordinates();
             await this.loadEvents();
             this.initMap();
             this.showAllEvents();
@@ -38,6 +40,24 @@ const EventsMap = {
             console.log('✅ Events Map initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing Events Map:', error);
+        }
+    },
+
+    async loadCoordinates() {
+        try {
+            console.log('Loading pre-calculated coordinates...');
+            const data = await d3.csv('data/locations_coordinates.csv');
+            
+            data.forEach(row => {
+                this.coordinatesData[row.location] = {
+                    lat: parseFloat(row.latitude),
+                    lng: parseFloat(row.longitude)
+                };
+            });
+            
+            console.log(`✅ Loaded ${Object.keys(this.coordinatesData).length} location coordinates`);
+        } catch (error) {
+            console.error('❌ Error loading coordinates:', error);
         }
     },
 
@@ -121,6 +141,27 @@ const EventsMap = {
                 minZoom: 2
             }).addTo(this.map);
 
+            // Criar grupo de clustering de marcadores
+            this.markerClusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 80,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                iconCreateFunction: function(cluster) {
+                    const count = cluster.getChildCount();
+                    let size = 'small';
+                    if (count > 10) size = 'medium';
+                    if (count > 50) size = 'large';
+                    
+                    return L.divIcon({
+                        html: `<div><span>${count}</span></div>`,
+                        className: 'marker-cluster marker-cluster-' + size,
+                        iconSize: L.point(40, 40)
+                    });
+                }
+            });
+
+            this.map.addLayer(this.markerClusterGroup);
             this.markersLayer = L.layerGroup().addTo(this.map);
             
             console.log('✅ Leaflet map created successfully');
@@ -139,15 +180,15 @@ const EventsMap = {
     async showAllEvents() {
         console.log('Showing all events on map...');
         
-        if (!this.markersLayer) {
-            console.error('Markers layer not initialized');
+        if (!this.markerClusterGroup) {
+            console.error('Marker cluster group not initialized');
             return;
         }
         
-        this.markersLayer.clearLayers();
+        this.markerClusterGroup.clearLayers();
 
         let markersAdded = 0;
-        let geocodingNeeded = 0;
+        let notFound = 0;
 
         const loadingDiv = document.createElement('div');
         loadingDiv.id = 'map-loading';
@@ -157,39 +198,29 @@ const EventsMap = {
 
         for (let i = 0; i < this.groupedEvents.length; i++) {
             const event = this.groupedEvents[i];
-            const locationKey = `${event.city}, ${event.country}`;
-
-            if (this.geocodeCache[locationKey]) {
-                this.addEventMarker(event, this.geocodeCache[locationKey]);
+            
+            // Usar coordenadas pré-calculadas
+            const coords = this.coordinatesData[event.location];
+            
+            if (coords) {
+                this.addEventMarker(event, [coords.lat, coords.lng]);
                 markersAdded++;
             } else {
-                geocodingNeeded++;
-                try {
-                    const coords = await this.geocodeLocation(event.city, event.country);
-                    if (coords) {
-                        this.geocodeCache[locationKey] = coords;
-                        this.addEventMarker(event, coords);
-                        markersAdded++;
-                    }
-                    if (geocodingNeeded % 5 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                } catch (error) {
-                    console.error(`Error geocoding ${locationKey}:`, error);
-                }
+                notFound++;
+                console.warn(`Coordinates not found for: ${event.location}`);
             }
 
-            if (i % 10 === 0) {
+            if (i % 20 === 0) {
                 loadingDiv.textContent = `Loading events: ${i + 1}/${this.groupedEvents.length}`;
             }
         }
 
         loadingDiv.remove();
 
-        console.log(`✅ Added ${markersAdded} event markers`);
+        console.log(`✅ Added ${markersAdded} event markers (${notFound} locations not found)`);
 
         if (markersAdded > 0) {
-            const bounds = this.markersLayer.getBounds();
+            const bounds = this.markerClusterGroup.getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds, { padding: [50, 50] });
             }
@@ -200,23 +231,6 @@ const EventsMap = {
         }, 200);
     },
 
-    async geocodeLocation(city, country) {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city + ', ' + country)}&limit=1`;
-        
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data[0]) {
-                return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-            }
-            return null;
-        } catch (error) {
-            console.error('Geocoding error:', error);
-            return null;
-        }
-    },
-
     addEventMarker(event, coords) {
         const marker = L.circleMarker(coords, {
             radius: 8,
@@ -225,7 +239,7 @@ const EventsMap = {
             weight: 2,
             opacity: 1,
             fillOpacity: 0.8
-        }).addTo(this.markersLayer);
+        });
 
         const eventDate = new Date(event.date);
         const formattedDate = eventDate.toLocaleDateString('en-US', { 
@@ -259,6 +273,9 @@ const EventsMap = {
                 fillOpacity: 0.8
             });
         });
+
+        // Adicionar ao grupo de clustering
+        this.markerClusterGroup.addLayer(marker);
     },
 
     showEventDetails(eventId) {
@@ -270,10 +287,16 @@ const EventsMap = {
             return;
         }
 
-        window.currentEventDetails = event;
-
+        // Navigate to event details page
         if (typeof Navigation !== 'undefined') {
             Navigation.navigateTo('event-details');
+            
+            // Initialize event details with the event data
+            if (typeof EventDetails !== 'undefined') {
+                setTimeout(() => {
+                    EventDetails.init(event);
+                }, 100);
+            }
         } else {
             console.error('Navigation module not found');
         }
@@ -310,13 +333,12 @@ const EventsMap = {
             event.date.includes(term)
         );
 
-        this.markersLayer.clearLayers();
+        this.markerClusterGroup.clearLayers();
 
         filtered.forEach(event => {
-            const locationKey = `${event.city}, ${event.country}`;
-            const coords = this.geocodeCache[locationKey];
+            const coords = this.coordinatesData[event.location];
             if (coords) {
-                this.addEventMarker(event, coords);
+                this.addEventMarker(event, [coords.lat, coords.lng]);
             }
         });
 

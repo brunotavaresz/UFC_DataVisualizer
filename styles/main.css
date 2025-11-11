@@ -1160,3 +1160,377 @@ svg {
         padding: 0.75rem 0.5rem;
     }
 }
+/* ========== MARKER CLUSTERING STYLES ========== */
+.marker-cluster {
+    background-color: transparent !important;
+    border-radius: 50%;
+    text-align: center;
+    font-weight: bold;
+}
+
+.marker-cluster div {
+    width: 40px;
+    height: 40px;
+    margin-left: 0;
+    margin-top: 0;
+    border-radius: 50%;
+    background-color: #d91c1c;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.marker-cluster span {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.marker-cluster-small {
+    background-color: transparent !important;
+}
+
+.marker-cluster-small div {
+    background-color: #d91c1c;
+    width: 35px;
+    height: 35px;
+}
+
+.marker-cluster-medium {
+    background-color: transparent !important;
+}
+
+.marker-cluster-medium div {
+    background-color: #d91c1c;
+    width: 45px;
+    height: 45px;
+}
+
+.marker-cluster-large {
+    background-color: transparent !important;
+}
+
+.marker-cluster-large div {
+    background-color: #d91c1c;
+    width: 55px;
+    height: 55px;
+}
+
+.marker-cluster-large span {
+    font-size: 16px;
+}
+
+/* Animação ao hover dos clusters */
+.marker-cluster:hover div {
+    background-color: #ff2c2c;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(217, 28, 28, 0.6);
+}
+
+/* ========== EVENT DETAILS PAGE REDESIGN ========== */
+.event-content-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.event-winners-section {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.event-winners-section h3 {
+    color: #d91c1c;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.winners-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.winner-card {
+    background: #2d2d2d;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.winner-card:hover {
+    border-color: #d91c1c;
+    transform: translateY(-2px);
+}
+
+.winner-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.winner-info h4 {
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+.winner-method {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.winner-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.winner-stat {
+    background: #1a1a1a;
+    padding: 0.4rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.winner-stat-label {
+    color: #888;
+    font-size: 0.75rem;
+    display: block;
+}
+
+.winner-stat-value {
+    color: #4ade80;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.winner-profile-btn {
+    width: 100%;
+    padding: 0.6rem;
+    background: #d91c1c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.winner-profile-btn:hover {
+    background: #ff2c2c;
+    transform: scale(1.02);
+}
+
+.event-fights-section {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.event-fights-section h3 {
+    color: #d91c1c;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.fights-table-container {
+    overflow-x: auto;
+}
+
+.fights-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #2d2d2d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.fights-table thead {
+    background: linear-gradient(135deg, #d91c1c 0%, #a01515 100%);
+}
+
+.fights-table th {
+    padding: 1rem;
+    text-align: left;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.fights-table td {
+    padding: 1rem;
+    color: #e0e0e0;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.fights-table tbody tr {
+    transition: all 0.2s;
+}
+
+.fights-table tbody tr:hover {
+    background: #353535;
+}
+
+.fight-number {
+    color: #d91c1c;
+    font-weight: bold;
+}
+
+.fight-winner {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.fight-loser {
+    color: #ef4444;
+}
+
+.fight-details-btn {
+    padding: 0.4rem 0.8rem;
+    background: #d91c1c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.fight-details-btn:hover {
+    background: #ff2c2c;
+    transform: scale(1.05);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    overflow: auto;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 80%;
+    max-width: 900px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-close {
+    color: #888;
+    float: right;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.modal-close:hover {
+    color: #d91c1c;
+}
+
+#fight-modal-title {
+    color: #d91c1c;
+    margin-bottom: 1.5rem;
+}
+
+.fight-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+.fighter-modal-section {
+    background: #2d2d2d;
+    padding: 1.5rem;
+    border-radius: 10px;
+}
+
+.fighter-modal-section h3 {
+    color: #e0e0e0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3a3a3a;
+}
+
+.modal-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.modal-stat-item {
+    background: #1a1a1a;
+    padding: 0.75rem;
+    border-radius: 6px;
+}
+
+.modal-stat-label {
+    color: #888;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.modal-stat-value {
+    color: #4ade80;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .event-content-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-winners-section {
+        position: static;
+    }
+    
+    .winners-list {
+        max-height: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+    }
+    
+    .fight-modal-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .winners-list {
+        grid-template-columns: 1fr;
+    }
+}

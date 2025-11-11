@@ -11,6 +11,10 @@
     <!-- Leaflet for maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster Plugin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -270,39 +274,49 @@
         </div>
     </div>
 
-    <div class="event-statistics" id="event-statistics">
-        <!-- Statistics will be populated by JS -->
-    </div>
-
-    <div class="event-charts-grid">
-        <div class="chart-card">
-            <h3>Finish Methods</h3>
-            <div id="methods-chart"></div>
-        </div>
-        <div class="chart-card">
-            <h3>Weight Classes</h3>
-            <div id="weight-classes-chart"></div>
-        </div>
-    </div>
-
-    <div class="fights-table-container">
-        <h3>Fight Card</h3>
-        <table class="fights-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Winner</th>
-                    <th>Loser</th>
-                    <th>Weight Class</th>
-                    <th>Method</th>
-                    <th>Round</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody id="event-fights-tbody">
+    <div class="event-content-grid">
+        <!-- Left Column: Winners Highlights -->
+        <div class="event-winners-section">
+            <h3>🏆 Event Winners</h3>
+            <div id="winners-list" class="winners-list">
                 <!-- Populated by JS -->
-            </tbody>
-        </table>
+            </div>
+        </div>
+
+        <!-- Right Column: Fights Table -->
+        <div class="event-fights-section">
+            <h3>Fight Card Details</h3>
+            <div class="fights-table-container">
+                <table class="fights-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Winner</th>
+                            <th>Loser</th>
+                            <th>Weight Class</th>
+                            <th>Method</th>
+                            <th>Round</th>
+                            <th>Time</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="event-fights-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fight Detail Modal -->
+    <div id="fight-detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2 id="fight-modal-title">Fight Details</h2>
+            <div id="fight-modal-body">
+                <!-- Populated by JS -->
+            </div>
+        </div>
     </div>
 </div>
 
@@ -316,6 +330,7 @@
 <script src="scripts/fighters-table.js"></script>
 <script src="scripts/fighter-details.js"></script>
 <script src="scripts/events-map.js"></script>
+<script src="scripts/event-details.js"></script>
 <script src="scripts/navigation.js"></script>
 <script src="scripts/main.js"></script>
 </body>
