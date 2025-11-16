@@ -89,12 +89,16 @@
                 </div>
 
                 <div class="filter-group">
-                    <label>Win Rate</label>
+                    <label>Clear Filters</label>
+                    <button id="clear-filters" class="btn-secondary">Reset All</button>
+                </div>
+
+                <div class="filter-group">
+                    <label>Win Rate (%)</label>
                     <div class="range-inputs">
                         <input type="number" id="winrate-min" placeholder="0" min="0" max="100" style="width: 70px;">
                         <span>to</span>
                         <input type="number" id="winrate-max" placeholder="100" min="0" max="100" style="width: 70px;">
-                        <span>%</span>
                     </div>
                 </div>
 
@@ -108,31 +112,53 @@
                 </div>
 
                 <div class="filter-group">
-                    <label>Clear Filters</label>
-                    <button id="clear-filters" class="btn-secondary">Reset All</button>
+                    <label>Height Range</label>
+                    <div class="dual-slider-wrapper">
+                        <input type="range" id="height-min" min="150" max="215" value="150" class="dual-slider dual-slider-min">
+                        <input type="range" id="height-max" min="150" max="215" value="215" class="dual-slider dual-slider-max">
+                    </div>
+                    <div class="slider-values">
+                        <span id="height-min-display">4'11"</span>
+                        <span>to</span>
+                        <span id="height-max-display">7'1"</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Weight Range</label>
+                    <div class="dual-slider-wrapper">
+                        <input type="range" id="weight-min" min="50" max="130" value="50" class="dual-slider dual-slider-min">
+                        <input type="range" id="weight-max" min="50" max="130" value="130" class="dual-slider dual-slider-max">
+                    </div>
+                    <div class="slider-values">
+                        <span id="weight-min-display">110 lbs</span>
+                        <span>to</span>
+                        <span id="weight-max-display">287 lbs</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="table-container">
             <table id="fighters-table">
-                <thead>
-                    <tr>
-                        <th data-sort="name">Name</th>
-                        <th data-sort="nickname">Nickname</th>
-                        <th data-sort="wins">Wins</th>
-                        <th data-sort="losses">Losses</th>
-                        <th data-sort="draws">Draws</th>
-                        <th data-sort="height">Height</th>
-                        <th data-sort="weight">Weight</th>
-                        <th data-sort="stance">Stance</th>
-                        <th>More Details</th>
-                    </tr>
-                </thead>
-                <tbody id="fighters-tbody">
-                    <!-- Populated by JS -->
-                </tbody>
-            </table>
+    <thead>
+        <tr>
+            <th data-sort="name">Name</th>
+            <th data-sort="nickname">Nickname</th>
+            <th data-sort="division">Division</th>
+            <th data-sort="wins">Wins</th>
+            <th data-sort="losses">Losses</th>
+            <th data-sort="draws">Draws</th>
+            <th data-sort="height">Height</th>
+            <th data-sort="weight">Weight</th>
+            <th data-sort="stance">Stance</th>
+            <th>More Details</th> <!-- NO data-sort attribute -->
+            </tr>
+        </thead>
+        <tbody id="fighters-tbody">
+            <!-- Populated by JavaScript -->
+        </tbody>
+    </table>
         </div>
     </div>
 

@@ -14,6 +14,15 @@ const DataLoader = {
                 this.loadFights()
             ]);
             console.log('All data loaded successfully');
+            console.log(`Total fighters: ${this.fighters.length}`);
+            
+            // Log division distribution for debugging
+            const divisionCount = {};
+            this.fighters.forEach(f => {
+                divisionCount[f.division] = (divisionCount[f.division] || 0) + 1;
+            });
+            console.log('Fighters by division:', divisionCount);
+            
             return true;
         } catch (error) {
             console.error('Error loading data:', error);
@@ -25,31 +34,36 @@ const DataLoader = {
     async loadFighters() {
         try {
             const data = await d3.csv('data/fighter_details.csv');
-            this.fighters = data.map(d => ({
-                id: d.id,
-                name: d.name,
-                nickname: d.nick_name || '',
-                wins: +d.wins || 0,
-                losses: +d.losses || 0,
-                draws: +d.draws || 0,
-                height: +d.height || 0,
-                weight: +d.weight || 0,
-                reach: +d.reach || 0,
-                stance: d.stance || 'Unknown',
-                dob: d.dob,
-                age: calculateAge(d.dob),
-                winRate: calculateWinRate(+d.wins, +d.losses, +d.draws),
-                division: getWeightDivision(+d.weight),
-                // Stats
-                splm: +d.splm || 0,
-                str_acc: +d.str_acc || 0,
-                sapm: +d.sapm || 0,
-                str_def: +d.str_def || 0,
-                td_avg: +d.td_avg || 0,
-                td_avg_acc: +d.td_avg_acc || 0,
-                td_def: +d.td_def || 0,
-                sub_avg: +d.sub_avg || 0
-            }));
+            this.fighters = data.map(d => {
+                const weight = +d.weight || 0;
+                const division = getWeightDivision(weight);
+                
+                return {
+                    id: d.id,
+                    name: d.name,
+                    nickname: d.nick_name || '',
+                    wins: +d.wins || 0,
+                    losses: +d.losses || 0,
+                    draws: +d.draws || 0,
+                    height: +d.height || 0,
+                    weight: weight,
+                    reach: +d.reach || 0,
+                    stance: d.stance || 'Unknown',
+                    dob: d.dob,
+                    age: calculateAge(d.dob),
+                    winRate: calculateWinRate(+d.wins, +d.losses, +d.draws),
+                    division: division,
+                    // Stats
+                    splm: +d.splm || 0,
+                    str_acc: +d.str_acc || 0,
+                    sapm: +d.sapm || 0,
+                    str_def: +d.str_def || 0,
+                    td_avg: +d.td_avg || 0,
+                    td_avg_acc: +d.td_avg_acc || 0,
+                    td_def: +d.td_def || 0,
+                    sub_avg: +d.sub_avg || 0
+                };
+            });
             console.log(`Loaded ${this.fighters.length} fighters`);
         } catch (error) {
             console.error('Error loading fighters:', error);
@@ -123,7 +137,35 @@ const DataLoader = {
                 return false;
             }
             
+            // Filter by height range (in cm)
+            if (criteria.heightMin && fighter.height < criteria.heightMin) {
+                return false;
+            }
+            if (criteria.heightMax && fighter.height > criteria.heightMax) {
+                return false;
+            }
+            
+            // Filter by weight range (in kg)
+            if (criteria.weightMin && fighter.weight < criteria.weightMin) {
+                return false;
+            }
+            if (criteria.weightMax && fighter.weight > criteria.weightMax) {
+                return false;
+            }
+            
             return true;
         });
+    },
+    
+    // Get all unique divisions (for filter dropdown)
+    getDivisions() {
+        const divisions = [...new Set(this.fighters.map(f => f.division))];
+        return divisions.filter(d => d !== 'unknown').sort();
+    },
+    
+    // Get all unique stances (for filter dropdown)
+    getStances() {
+        const stances = [...new Set(this.fighters.map(f => f.stance))];
+        return stances.filter(s => s && s !== 'Unknown').sort();
     }
 };
