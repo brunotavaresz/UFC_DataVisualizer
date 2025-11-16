@@ -345,14 +345,49 @@ const FightDetails = {
                 .style('font-size', '12px')
                 .text('Total');
 
-            // Title below the chart
-            svg.append('text')
-                .attr('y', radius + 30)
-                .attr('text-anchor', 'middle')
-                .style('fill', '#e0e0e0')
-                .style('font-size', '14px')
+            // Fighter name below the SVG as HTML element
+            d3.select(pieDiv)
+                .append('div')
+                .style('text-align', 'center')
+                .style('margin-top', '15px')
+                .style('margin-bottom', '10px')
+                .style('color', '#e0e0e0')
+                .style('font-size', '16px')
                 .style('font-weight', 'bold')
                 .text(fighter.name);
+
+            // Add legend below fighter name
+            const legendData = [
+                { label: 'Head', color: '#ef4444' },
+                { label: 'Body', color: '#fbbf24' },
+                { label: 'Leg', color: '#60a5fa' }
+            ];
+
+            const legend = d3.select(pieDiv)
+                .append('div')
+                .style('text-align', 'center')
+                .style('margin-top', '10px')
+                .style('font-size', '12px');
+
+            legendData.forEach(item => {
+                const legendItem = legend.append('div')
+                    .style('display', 'inline-block')
+                    .style('margin', '0 8px');
+
+                legendItem.append('span')
+                    .style('display', 'inline-block')
+                    .style('width', '12px')
+                    .style('height', '12px')
+                    .style('background-color', item.color)
+                    .style('border-radius', '2px')
+                    .style('margin-right', '5px')
+                    .style('vertical-align', 'middle');
+
+                legendItem.append('span')
+                    .style('color', '#888')
+                    .style('vertical-align', 'middle')
+                    .text(item.label);
+            });
         });
     },
 
@@ -551,14 +586,14 @@ const FightDetails = {
         
         // Dados: cada métrica é um ponto com X = red fighter, Y = blue fighter
         const metrics = [
-            { name: 'Sig. Strikes', r_val: +f.r_sig_str_landed || 0, b_val: +f.b_sig_str_landed || 0, color: '#3b82f6' },
-            { name: 'Total Strikes', r_val: +f.r_total_str_landed || 0, b_val: +f.b_total_str_landed || 0, color: '#3b82f6' },
-            { name: 'Head Strikes', r_val: +f.r_head_landed || 0, b_val: +f.b_head_landed || 0, color: '#3b82f6' },
-            { name: 'Body Strikes', r_val: +f.r_body_landed || 0, b_val: +f.b_body_landed || 0, color: '#3b82f6' },
-            { name: 'Leg Strikes', r_val: +f.r_leg_landed || 0, b_val: +f.b_leg_landed || 0, color: '#3b82f6' },
-            { name: 'Knockdowns', r_val: +f.r_kd || 0, b_val: +f.b_kd || 0, color: '#ef4444' },
-            { name: 'Takedowns', r_val: +f.r_td_landed || 0, b_val: +f.b_td_landed || 0, color: '#ef4444' },
-            { name: 'Submissions', r_val: +f.r_sub_att || 0, b_val: +f.b_sub_att || 0, color: '#ef4444' }
+            { name: 'Sig. Strikes', r_val: +f.r_sig_str_landed || 0, b_val: +f.b_sig_str_landed || 0, color: '#666', type: 'strike' },
+            { name: 'Total Strikes', r_val: +f.r_total_str_landed || 0, b_val: +f.b_total_str_landed || 0, color: '#666', type: 'strike' },
+            { name: 'Head Strikes', r_val: +f.r_head_landed || 0, b_val: +f.b_head_landed || 0, color: '#666', type: 'strike' },
+            { name: 'Body Strikes', r_val: +f.r_body_landed || 0, b_val: +f.b_body_landed || 0, color: '#666', type: 'strike' },
+            { name: 'Leg Strikes', r_val: +f.r_leg_landed || 0, b_val: +f.b_leg_landed || 0, color: '#666', type: 'strike' },
+            { name: 'Knockdowns', r_val: +f.r_kd || 0, b_val: +f.b_kd || 0, color: '#ef4444', type: 'special' },
+            { name: 'Takedowns', r_val: +f.r_td_landed || 0, b_val: +f.b_td_landed || 0, color: '#888', type: 'strike' },
+            { name: 'Submissions', r_val: +f.r_sub_att || 0, b_val: +f.b_sub_att || 0, color: '#fbbf24', type: 'special' }
         ];
 
         const width = container.clientWidth || 600;
