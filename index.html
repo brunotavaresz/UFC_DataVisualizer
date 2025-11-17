@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Driver.js for guided tours -->
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
@@ -26,6 +29,14 @@
             <li><a href="#" data-page="fighters">Fighters</a></li>
             <li><a href="#" data-page="events">Events & Fights</a></li>
         </ul>
+        <button id="helper-btn" class="helper-btn" title="Start guided tour">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Helper
+        </button>
     </nav>
 
     <!-- Landing Page -->
@@ -286,15 +297,15 @@
         <h1 id="event-detail-title">Event Name</h1>
         <div class="event-detail-info">
             <div class="info-item">
-                <span class="info-label">📅 Date:</span>
+                <span class="info-label">Date:</span>
                 <span id="event-detail-date">-</span>
             </div>
             <div class="info-item">
-                <span class="info-label">📍 Location:</span>
+                <span class="info-label">Location:</span>
                 <span id="event-detail-location">-</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🥊 Total Fights:</span>
+                <span class="info-label">Total Fights:</span>
                 <span id="event-fight-count">-</span>
             </div>
         </div>
@@ -303,7 +314,7 @@
     <div class="event-content-grid">
         <!-- Left Column: Winners Highlights -->
         <div class="event-winners-section">
-            <h3>🏆 Event Winners</h3>
+            <h3>Event Winners</h3>
             <div id="winners-list" class="winners-list">
                 <!-- Populated by JS -->
             </div>
@@ -343,19 +354,19 @@
         <h1 id="fight-detail-title">Fighter 1 vs Fighter 2</h1>
         <div class="fight-detail-info">
             <div class="info-item">
-                <span class="info-label">📅 Event:</span>
+                <span class="info-label">Event:</span>
                 <span id="fight-event-name">-</span>
             </div>
             <div class="info-item">
-                <span class="info-label">⚖️ Division:</span>
+                <span class="info-label">Division:</span>
                 <span id="fight-division">-</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🏆 Method:</span>
+                <span class="info-label">Method:</span>
                 <span id="fight-method">-</span>
             </div>
             <div class="info-item">
-                <span class="info-label">⏱️ Time:</span>
+                <span class="info-label">Time:</span>
                 <span id="fight-time">-</span>
             </div>
         </div>
@@ -423,6 +434,7 @@
 <script src="scripts/event-details.js"></script>
 <script src="scripts/fight-details.js"></script>
 <script src="scripts/navigation.js"></script>
+<script src="scripts/tour-guide.js"></script>
 <script src="scripts/main.js"></script>
 </body>
 </html>

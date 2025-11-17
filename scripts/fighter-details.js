@@ -60,6 +60,7 @@ const FighterDetails = {
 
     createCompareButton(f) {
     const container = document.createElement('div');
+    container.id = 'compare-fighter-btn'; // Add ID for tour guide
     container.style.cssText = `
         background: #1a1a1a;
         border-radius: 16px;

@@ -81,67 +81,83 @@ const FightDetails = {
         document.getElementById('fight-detail-title').textContent = 
             `${f.r_name} vs ${f.b_name}`;
         document.getElementById('fight-event-name').textContent = f.event_name || 'UFC Event';
-        document.getElementById('fight-division').textContent = f.division || 'N/A';
+        document.getElementById('fight-division').textContent =
+        f.division
+            ? f.division.charAt(0).toUpperCase() + f.division.slice(1)
+            : 'N/A';
+
         document.getElementById('fight-method').textContent = f.method || 'N/A';
         document.getElementById('fight-time').textContent = 
             `Round ${f.finish_round} - ${this.formatTime(f.match_time_sec)}`;
     },
 
     populateFighterCards() {
-        const f = this.currentFight;
-        
-        // Red Corner
-        document.getElementById('red-fighter-name').textContent = f.r_name;
-        const redStats = document.getElementById('red-fighter-stats');
-        redStats.innerHTML = `
-            <div class="stat-item">
-                <span class="stat-label">Knockdowns:</span>
-                <span class="stat-value">${f.r_kd || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Sig. Strikes:</span>
-                <span class="stat-value">${f.r_sig_str_landed || 0}/${f.r_sig_str_atmpted || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Accuracy:</span>
-                <span class="stat-value">${f.r_sig_str_acc || 0}%</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Takedowns:</span>
-                <span class="stat-value">${f.r_td_landed || 0}/${f.r_td_atmpted || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Submissions:</span>
-                <span class="stat-value">${f.r_sub_att || 0}</span>
-            </div>
-        `;
+    const f = this.currentFight;
 
-        // Blue Corner
-        document.getElementById('blue-fighter-name').textContent = f.b_name;
-        const blueStats = document.getElementById('blue-fighter-stats');
-        blueStats.innerHTML = `
-            <div class="stat-item">
-                <span class="stat-label">Knockdowns:</span>
-                <span class="stat-value">${f.b_kd || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Sig. Strikes:</span>
-                <span class="stat-value">${f.b_sig_str_landed || 0}/${f.b_sig_str_atmpted || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Accuracy:</span>
-                <span class="stat-value">${f.b_sig_str_acc || 0}%</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Takedowns:</span>
-                <span class="stat-value">${f.b_td_landed || 0}/${f.b_td_atmpted || 0}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Submissions:</span>
-                <span class="stat-value">${f.b_sub_att || 0}</span>
-            </div>
-        `;
-    },
+    const cmp = (a, b) => {
+        if (a > b) return ['stat-winner', 'stat-loser'];
+        if (b > a) return ['stat-loser', 'stat-winner'];
+        return ['stat-tie', 'stat-tie'];
+    };
+
+    // Comparações
+    const [rKD, bKD] = cmp(+f.r_kd, +f.b_kd);
+    const [rSigAcc, bSigAcc] = cmp(+f.r_sig_str_acc, +f.b_sig_str_acc);
+    const [rSigLand, bSigLand] = cmp(+f.r_sig_str_landed, +f.b_sig_str_landed);
+    const [rTD, bTD] = cmp(+f.r_td_landed, +f.b_td_landed);
+    const [rSub, bSub] = cmp(+f.r_sub_att, +f.b_sub_att);
+
+    // RED
+    document.getElementById('red-fighter-name').textContent = f.r_name;
+    document.getElementById('red-fighter-stats').innerHTML = `
+        <div class="stat-item">
+            <span class="stat-label">Knockdowns:</span>
+            <span class="stat-value ${rKD}">${f.r_kd || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Sig. Strikes:</span>
+            <span class="stat-value ${rSigLand}">${f.r_sig_str_landed || 0}/${f.r_sig_str_atmpted || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Accuracy:</span>
+            <span class="stat-value ${rSigAcc}">${f.r_sig_str_acc || 0}%</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Takedowns:</span>
+            <span class="stat-value ${rTD}">${f.r_td_landed || 0}/${f.r_td_atmpted || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Submissions:</span>
+            <span class="stat-value ${rSub}">${f.r_sub_att || 0}</span>
+        </div>
+    `;
+
+    // BLUE
+    document.getElementById('blue-fighter-name').textContent = f.b_name;
+    document.getElementById('blue-fighter-stats').innerHTML = `
+        <div class="stat-item">
+            <span class="stat-label">Knockdowns:</span>
+            <span class="stat-value ${bKD}">${f.b_kd || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Sig. Strikes:</span>
+            <span class="stat-value ${bSigLand}">${f.b_sig_str_landed || 0}/${f.b_sig_str_atmpted || 0}</span>
+        </div>
+        <div class="stat-item"a>
+            <span class="stat-label">Accuracy:</span>
+            <span class="stat-value ${bSigAcc}">${f.b_sig_str_acc || 0}%</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Takedowns:</span>
+            <span class="stat-value ${bTD}">${f.b_td_landed || 0}/${f.b_td_atmpted || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Submissions:</span>
+            <span class="stat-value ${bSub}">${f.b_sub_att || 0}</span>
+        </div>
+    `;
+},
+
 
     createVisualizations() {
         this.createStrikesComparison();
@@ -581,146 +597,266 @@ const FightDetails = {
     },
 
     createPerformanceScatter() {
-        const f = this.currentFight;
-        const container = document.getElementById('performance-scatter');
-        
-        // Dados: cada métrica é um ponto com X = red fighter, Y = blue fighter
-        const metrics = [
-            { name: 'Sig. Strikes', r_val: +f.r_sig_str_landed || 0, b_val: +f.b_sig_str_landed || 0, color: '#666', type: 'strike' },
-            { name: 'Total Strikes', r_val: +f.r_total_str_landed || 0, b_val: +f.b_total_str_landed || 0, color: '#666', type: 'strike' },
-            { name: 'Head Strikes', r_val: +f.r_head_landed || 0, b_val: +f.b_head_landed || 0, color: '#666', type: 'strike' },
-            { name: 'Body Strikes', r_val: +f.r_body_landed || 0, b_val: +f.b_body_landed || 0, color: '#666', type: 'strike' },
-            { name: 'Leg Strikes', r_val: +f.r_leg_landed || 0, b_val: +f.b_leg_landed || 0, color: '#666', type: 'strike' },
-            { name: 'Knockdowns', r_val: +f.r_kd || 0, b_val: +f.b_kd || 0, color: '#ef4444', type: 'special' },
-            { name: 'Takedowns', r_val: +f.r_td_landed || 0, b_val: +f.b_td_landed || 0, color: '#888', type: 'strike' },
-            { name: 'Submissions', r_val: +f.r_sub_att || 0, b_val: +f.b_sub_att || 0, color: '#fbbf24', type: 'special' }
-        ];
+    const f = this.currentFight;
+    const container = document.getElementById('performance-scatter');
 
-        const width = container.clientWidth || 600;
-        const height = 400;
-        const margin = { top: 40, right: 40, bottom: 80, left: 80 };
+    // Dados
+    const metrics = [
+        { name: 'Sig. Strikes',  r_val: +f.r_sig_str_landed  || 0, b_val: +f.b_sig_str_landed  || 0, color: '#3b82f6' },
+        { name: 'Total Strikes', r_val: +f.r_total_str_landed || 0, b_val: +f.b_total_str_landed || 0, color: '#3b82f6' },
+        { name: 'Head Strikes',  r_val: +f.r_head_landed      || 0, b_val: +f.b_head_landed      || 0, color: '#3b82f6' },
+        { name: 'Body Strikes',  r_val: +f.r_body_landed      || 0, b_val: +f.b_body_landed      || 0, color: '#3b82f6' },
+        { name: 'Leg Strikes',   r_val: +f.r_leg_landed       || 0, b_val: +f.b_leg_landed       || 0, color: '#3b82f6' },
 
-        const svg = d3.select(container)
-            .html('')
-            .append('svg')
-            .attr('width', width)
-            .attr('height', height);
+        { name: 'Knockdowns',  r_val: +f.r_kd        || 0, b_val: +f.b_kd        || 0, color: '#ef4444' },
+        { name: 'Takedowns',   r_val: +f.r_td_landed || 0, b_val: +f.b_td_landed || 0, color: '#ef4444' },
+        { name: 'Submissions', r_val: +f.r_sub_att   || 0, b_val: +f.b_sub_att   || 0, color: '#ef4444' }
+    ];
 
-        const maxVal = d3.max(metrics, d => Math.max(d.r_val, d.b_val)) || 10;
+    const width = container.clientWidth || 600;
+    const height = 400;
+    const margin = { top: 40, right: 40, bottom: 80, left: 80 };
 
-        const x = d3.scaleLinear()
-            .domain([0, maxVal * 1.1])
-            .nice()
-            .range([margin.left, width - margin.right]);
+    const svg = d3.select(container)
+        .html('')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
 
-        const y = d3.scaleLinear()
-            .domain([0, maxVal * 1.1])
-            .nice()
-            .range([height - margin.bottom, margin.top]);
+    // Escalas base
+    const maxVal = d3.max(metrics, d => Math.max(d.r_val, d.b_val)) || 10;
 
-        // Diagonal line (equal performance)
-        svg.append('line')
-            .attr('x1', x(0))
-            .attr('y1', y(0))
-            .attr('x2', x(maxVal))
-            .attr('y2', y(maxVal))
-            .attr('stroke', '#666')
-            .attr('stroke-width', 2)
-            .attr('stroke-dasharray', '5,5');
+    let x = d3.scaleLinear()
+        .domain([0, maxVal * 1.1])
+        .nice()
+        .range([margin.left, width - margin.right]);
 
-        // Points
-        svg.selectAll('circle')
-            .data(metrics)
-            .join('circle')
-            .attr('cx', d => x(d.r_val))
-            .attr('cy', d => y(d.b_val))
-            .attr('r', 8)
-            .attr('fill', d => d.color)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 2)
-            .style('cursor', 'pointer')
-            .on('mouseover', (event, d) => {
-                d3.select(event.target)
-                    .transition()
-                    .duration(200)
-                    .attr('r', 12);
-                
+    let y = d3.scaleLinear()
+        .domain([0, maxVal * 1.1])
+        .nice()
+        .range([height - margin.bottom, margin.top]);
+
+    // Eixos
+    const xAxisG = svg.append("g")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x));
+
+    xAxisG.selectAll('text').style('fill', '#e0e0e0');
+
+    const yAxisG = svg.append("g")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y));
+
+    yAxisG.selectAll('text').style('fill', '#e0e0e0');
+
+    // Labels dos eixos
+    svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height - 10)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#ffffff')
+        .style('font-size', '14px')
+        .style('font-weight', 'bold')
+        .text(f.r_name);
+
+    svg.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -height / 2)
+        .attr('y', 15)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#ffffff')
+        .style('font-size', '14px')
+        .style('font-weight', 'bold')
+        .text(f.b_name);
+
+    svg.selectAll('.domain, .tick line')
+        .style('stroke', '#666');
+
+    // Linha diagonal
+    const diagonal = svg.append('line')
+        .attr('x1', x(0))
+        .attr('y1', y(0))
+        .attr('x2', x(maxVal))
+        .attr('y2', y(maxVal))
+        .attr('stroke', '#666')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '5,5');
+
+    // Pontos
+    const points = svg.append('g')
+        .selectAll('circle')
+        .data(metrics)
+        .join('circle')
+        .attr('cx', d => x(d.r_val))
+        .attr('cy', d => y(d.b_val))
+        .attr('r', 8)
+        .attr('fill', d => d.color)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+            if (!zoomMode) {
+                d3.select(event.target).transition().duration(200).attr('r', 12);
                 this.showTooltip(
-                    `<strong>${d.name}</strong><br>` +
-                    `${f.r_name}: ${d.r_val}<br>` +
-                    `${f.b_name}: ${d.b_val}`,
+                    `<strong>${d.name}</strong><br>${f.r_name}: ${d.r_val}<br>${f.b_name}: ${d.b_val}`,
                     event.clientX,
                     event.clientY
                 );
-            })
-            .on('mouseout', (event) => {
-                d3.select(event.target)
-                    .transition()
-                    .duration(200)
-                    .attr('r', 8);
+            }
+        })
+        .on('mouseout', (event) => {
+            if (!zoomMode) {
+                d3.select(event.target).transition().duration(200).attr('r', 8);
                 this.hideTooltip();
-            });
-
-        // X Axis
-        svg.append('g')
-            .attr('transform', `translate(0,${height - margin.bottom})`)
-            .call(d3.axisBottom(x))
-            .selectAll('text')
-            .style('fill', '#e0e0e0');
-
-        svg.append('text')
-            .attr('x', width / 2)
-            .attr('y', height - 10)
-            .attr('text-anchor', 'middle')
-            .style('fill', '#ef4444')
-            .style('font-size', '14px')
-            .style('font-weight', 'bold')
-            .text(`🔴 ${f.r_name}`);
-
-        // Y Axis
-        svg.append('g')
-            .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y))
-            .selectAll('text')
-            .style('fill', '#e0e0e0');
-
-        svg.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -height / 2)
-            .attr('y', 15)
-            .attr('text-anchor', 'middle')
-            .style('fill', '#3b82f6')
-            .style('font-size', '14px')
-            .style('font-weight', 'bold')
-            .text(`🔵 ${f.b_name}`);
-
-        svg.selectAll('.domain, .tick line')
-            .style('stroke', '#666');
-
-        // Legend
-        const legend = svg.append('g')
-            .attr('transform', `translate(${margin.left}, ${margin.top - 20})`);
-
-        const legendData = [
-            { label: 'Strikes', color: '#3b82f6' },
-            { label: 'Knockdowns/TDs/Subs', color: '#ef4444' }
-        ];
-
-        legendData.forEach((item, i) => {
-            legend.append('circle')
-                .attr('cx', i * 200)
-                .attr('cy', 0)
-                .attr('r', 6)
-                .attr('fill', item.color);
-
-            legend.append('text')
-                .attr('x', i * 200 + 12)
-                .attr('y', 5)
-                .style('fill', '#e0e0e0')
-                .style('font-size', '12px')
-                .text(item.label);
+            }
         });
-    },
+
+    // ----- ZOOM VARIABLES -----
+    let zoomMode = false;
+    const originalX = x.copy();
+    const originalY = y.copy();
+
+    // Brush (não ativo por default)
+    const brush = d3.brush()
+        .extent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+        .on("end", brushEnded);
+
+    const brushLayer = svg.append("g").attr("class", "brush");
+
+    const self = this;
+
+    function brushEnded(event) {
+        if (!zoomMode) return;
+        if (!event.selection) return;
+
+        const [[x0, y0], [x1, y1]] = event.selection;
+
+        x.domain([originalX.invert(x0), originalX.invert(x1)]);
+        y.domain([originalY.invert(y1), originalY.invert(y0)]);
+
+        // Update eixos
+        xAxisG.call(d3.axisBottom(x));
+        yAxisG.call(d3.axisLeft(y));
+
+        // Update diagonal
+        diagonal
+            .attr('x1', x(0))
+            .attr('y1', y(0))
+            .attr('x2', x(maxVal))
+            .attr('y2', y(maxVal));
+
+        // Update pontos
+        points
+            .transition()
+            .duration(300)
+            .attr('cx', d => x(d.r_val))
+            .attr('cy', d => y(d.b_val));
+
+        // Remove brush
+        brushLayer.call(brush.move, null);
+    }
+
+    // RESET ZOOM COM DUPLO CLIQUE
+    svg.on("dblclick", () => {
+        x.domain(originalX.domain());
+        y.domain(originalY.domain());
+
+        xAxisG.call(d3.axisBottom(x));
+        yAxisG.call(d3.axisLeft(y));
+
+        diagonal
+            .attr('x1', x(0))
+            .attr('y1', y(0))
+            .attr('x2', x(maxVal))
+            .attr('y2', y(maxVal));
+
+        points
+            .transition()
+            .duration(300)
+            .attr('cx', d => x(d.r_val))
+            .attr('cy', d => y(d.b_val));
+    });
+
+    // ----- BOTÃO MINIMALISTA (MODE ZOOM) -----
+    const zoomButton = svg.append("g")
+        .attr("class", "zoom-toggle")
+        .attr("transform", `translate(${width - 120}, ${margin.top - 30})`)
+        .style("cursor", "pointer")
+        .on("click", toggleZoomMode);
+
+    zoomButton.append("rect")
+        .attr("width", 110)
+        .attr("height", 26)
+        .attr("rx", 6)
+        .attr("fill", "#222")
+        .attr("stroke", "#666")
+        .attr("stroke-width", 1.2);
+
+    const zoomText = zoomButton.append("text")
+        .attr("x", 55)
+        .attr("y", 17)
+        .attr("text-anchor", "middle")
+        .style("fill", "#e0e0e0")
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .text("🔍 Zoom: OFF");
+
+    function toggleZoomMode() {
+        zoomMode = !zoomMode;
+
+        if (zoomMode) {
+            zoomText.text("🔍 Zoom: ON");
+
+            // Recria brushLayer limpo
+            brushLayer
+                .attr("pointer-events", "all")
+                .call(brush);
+            
+            // Bloqueia hover e clique dos pontos durante zoom
+            points.style("pointer-events", "none");
+
+        } else {
+            zoomText.text("🔍 Zoom: OFF");
+
+            // Remove brush COMPLETAMENTE
+            brushLayer.selectAll("*").remove();   // limpa dentro do g
+            brushLayer.on(".brush", null);        // remove handlers
+            brushLayer.attr("pointer-events", "none"); // evita bloqueio
+
+            // Reativa hover e clique dos pontos
+            points.style("pointer-events", "auto");
+
+            // Garante que tooltip não fica presa
+            this.hideTooltip?.();
+        }
+    }
+
+
+    // Legenda
+    const legend = svg.append('g')
+        .attr('transform', `translate(${margin.left}, ${margin.top - 20})`);
+
+    const legendData = [
+        { label: 'Strikes', color: '#3b82f6' },
+        { label: 'Knockdowns/TDs/Subs', color: '#ef4444' }
+    ];
+
+    legendData.forEach((item, i) => {
+        legend.append('circle')
+            .attr('cx', i * 200)
+            .attr('cy', 0)
+            .attr('r', 6)
+            .attr('fill', item.color);
+
+        legend.append('text')
+            .attr('x', i * 200 + 12)
+            .attr('y', 5)
+            .style('fill', '#e0e0e0')
+            .style('font-size', '12px')
+            .text(item.label);
+    });
+},
+
 
     formatTime(seconds) {
         if (!seconds) return '0:00';
