@@ -250,6 +250,97 @@ class TourGuide {
             FighterDetails.hideTooltip = () => {};
             
             const driver = window.driver.js.driver;
+            
+            // Check which elements actually exist on the page
+            const fighterCard = document.querySelector('#fighter-details > div > div:first-child > div:first-child');
+            const recordChart = document.getElementById('modern-record-chart');
+            const strikingRadar = document.getElementById('modern-striking-radar');
+            const takedownRadar = document.getElementById('modern-takedown-radar');
+            const performanceBars = document.getElementById('performance-bars');
+            const compareBtn = document.getElementById('compare-fighter-btn');
+            
+            const steps = [
+                {
+                    popover: {
+                        title: '🥊 Fighter Details Page',
+                        description: 'This page shows comprehensive statistics and visualizations for the selected fighter. Tooltips are temporarily disabled during this tour!',
+                        side: 'top'
+                    }
+                }
+            ];
+            
+            // Add fighter card step (with photo)
+            if (fighterCard) {
+                steps.push({
+                    element: fighterCard,
+                    popover: {
+                        title: '📸 Fighter Profile',
+                        description: 'Fighter photo, name, and nickname. Click on the photo to view a full body image in a modal!',
+                        side: 'right'
+                    }
+                });
+            }
+            
+            // Add record chart step
+            if (recordChart) {
+                steps.push({
+                    element: recordChart,
+                    popover: {
+                        title: '📊 Interactive Record Chart',
+                        description: 'Donut chart showing wins, losses, and draws distribution. Hover over it after the tour for details!',
+                        side: 'left'
+                    }
+                });
+            }
+            
+            // Add striking radar step
+            if (strikingRadar) {
+                steps.push({
+                    element: strikingRadar,
+                    popover: {
+                        title: '👊 Striking Radar',
+                        description: 'SPLM, Accuracy, Defense, and SAPM visualized. Each point shows striking capabilities.',
+                        side: 'left'
+                    }
+                });
+            }
+            
+            // Add takedown radar step
+            if (takedownRadar) {
+                steps.push({
+                    element: takedownRadar,
+                    popover: {
+                        title: '🤼 Grappling Radar',
+                        description: 'Takedown stats and submission attempts. Shows grappling effectiveness.',
+                        side: 'left'
+                    }
+                });
+            }
+            
+            // Add performance bars step
+            if (performanceBars) {
+                steps.push({
+                    element: performanceBars,
+                    popover: {
+                        title: '📈 Performance Metrics',
+                        description: 'Interactive bars comparing win rate, striking, takedowns, and reach. Hover after tour for tooltips!',
+                        side: 'top'
+                    }
+                });
+            }
+            
+            // Add compare button step
+            if (compareBtn) {
+                steps.push({
+                    element: compareBtn,
+                    popover: {
+                        title: '⚖️ Compare Fighters',
+                        description: 'Click here to select another fighter and see a detailed side-by-side comparison!',
+                        side: 'left'
+                    }
+                });
+            }
+            
             const driverObj = driver({
                 animate: false,
                 showProgress: true,
@@ -262,71 +353,7 @@ class TourGuide {
                         driverObj.destroy();
                     }
                 },
-                steps: [
-                    {
-                        popover: {
-                            title: '🥊 Fighter Details Page',
-                            description: 'This page shows comprehensive statistics and visualizations for the selected fighter. Tooltips are temporarily disabled during this tour!',
-                            side: 'top'
-                        }
-                    },
-                    {
-                        element: '.fighter-header img',
-                        popover: {
-                            title: '📸 Fighter Photo',
-                            description: 'Click on the fighter photo to view a full body image in a modal!',
-                            side: 'bottom'
-                        }
-                    },
-                    {
-                        element: '.fighter-header',
-                        popover: {
-                            title: '👤 Fighter Profile',
-                            description: 'Name, nickname, stance badge, and quick overview of the fighter.',
-                            side: 'bottom'
-                        }
-                    },
-                    {
-                        element: '#modern-record-chart',
-                        popover: {
-                            title: '📊 Interactive Record Chart',
-                            description: 'Donut chart showing wins, losses, and draws distribution. Hover over it after the tour for details!',
-                            side: 'right'
-                        }
-                    },
-                    {
-                        element: '#modern-striking-radar',
-                        popover: {
-                            title: '👊 Striking Radar',
-                            description: 'SPLM, Accuracy, Defense, and SAPM visualized. Each point shows striking capabilities.',
-                            side: 'left'
-                        }
-                    },
-                    {
-                        element: '#modern-takedown-radar',
-                        popover: {
-                            title: '🤼 Grappling Radar',
-                            description: 'Takedown stats and submission attempts. Shows grappling effectiveness.',
-                            side: 'right'
-                        }
-                    },
-                    {
-                        element: '#performance-bars',
-                        popover: {
-                            title: '📈 Performance Metrics',
-                            description: 'Interactive bars comparing win rate, striking, takedowns, and reach. Hover after tour for tooltips!',
-                            side: 'top'
-                        }
-                    },
-                    {
-                        element: '#compare-fighter-btn',
-                        popover: {
-                            title: '⚖️ Compare Fighters',
-                            description: 'Click here to select another fighter and see a detailed side-by-side comparison!',
-                            side: 'left'
-                        }
-                    }
-                ]
+                steps: steps
             });
 
             driverObj.drive();
