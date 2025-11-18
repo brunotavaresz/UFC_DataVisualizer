@@ -2153,3 +2153,141 @@ svg {
 }
 
 }
+
+/* ========== EVENT LIST MODAL (NOVO) ========== */
+
+/* O .modal e .modal-content já existem no seu CSS para o fight-modal.
+   Vamos apenas garantir que o ID é reutilizado e que os estilos de filtro de data ficam bem. */
+
+#event-list-modal .modal-content {
+    /* Ajustes específicos para o modal da lista de eventos */
+    max-width: 600px;
+}
+
+#event-list-content h2 {
+    color: #d91c1c;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #2d2d2d;
+    padding-bottom: 0.5rem;
+}
+
+#location-list-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #2d2d2d;
+    border-radius: 8px;
+}
+
+#location-list-controls label {
+    color: #c0c0c0;
+    font-weight: 500;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+#location-list-controls input[type="date"] {
+    background-color: #1a1a1a;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    flex-grow: 1;
+    min-width: 130px;
+}
+
+#location-list-controls input[type="date"]:focus {
+    border-color: #d91c1c;
+    box-shadow: 0 0 0 3px rgba(217, 28, 28, 0.4);
+    outline: none;
+}
+
+/* Lista de Eventos Filtrada */
+#filtered-location-events ul {
+    list-style: none;
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+#filtered-location-events li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #2d2d2d;
+    transition: background 0.2s;
+}
+
+#filtered-location-events li:last-child {
+    border-bottom: none;
+}
+
+#filtered-location-events li:hover {
+    background: #2d2d2d;
+    border-radius: 4px;
+}
+
+#filtered-location-events li strong {
+    color: #e0e0e0;
+    margin-right: 1rem;
+}
+
+#filtered-location-events button {
+    background: #d91c1c;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+#filtered-location-events button:hover {
+    background: #ff2c2c;
+}
+
+#filtered-location-events p {
+    text-align: center;
+    color: #888;
+    padding: 2rem 0;
+}
+
+
+/* Estilo NOVO para o botão 'Show All Events' no popup do mapa */
+.leaflet-popup-content button:nth-child(2) {
+    margin-top: 0.25rem; 
+    padding: 0.5rem 1rem; 
+    background: #1c9cd9; /* Azul para diferenciar da Ação Principal */
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    width: 100%;
+}
+
+.leaflet-popup-content button:nth-child(2):hover {
+    background: #1a88bb;
+}
+
+@media (max-width: 600px) {
+    #location-list-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #location-list-controls input[type="date"] {
+        width: 100%;
+    }
+}

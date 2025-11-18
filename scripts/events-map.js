@@ -46,6 +46,8 @@ const EventsMap = {
     async loadCoordinates() {
         try {
             console.log('Loading pre-calculated coordinates...');
+            // Assumindo que DataLoader é acessível ou d3 é carregado.
+            // Para manter a compatibilidade com o código original:
             const data = await d3.csv('data/locations_coordinates.csv');
             
             data.forEach(row => {
@@ -63,11 +65,13 @@ const EventsMap = {
 
     async loadEvents() {
         try {
-            if (DataLoader.events && DataLoader.events.length > 0) {
+            // Supondo que DataLoader é definido ou carregando de CSV
+            if (typeof DataLoader !== 'undefined' && DataLoader.events && DataLoader.events.length > 0) {
                 this.eventsData = DataLoader.events;
                 console.log('Using pre-loaded events data');
             } else {
                 console.log('Loading events from CSV...');
+                // Assumindo d3 é carregado
                 this.eventsData = await d3.csv('data/event_details.csv');
             }
             
@@ -161,6 +165,25 @@ const EventsMap = {
                 }
             });
 
+            // NOVO: Adicionar listener para o evento 'clusterclick' para abrir a lista de eventos
+            this.markerClusterGroup.on('clusterclick', (a) => {
+                // Se o cluster estiver no zoom máximo e for "spiderfied"
+                if (a.propagated) {
+                    // Prevenir o zoom padrão se quisermos abrir o modal imediatamente
+                    // a.layer.zoomToBounds({padding: [20, 20]}); // Comportamento padrão de zoom
+                    
+                    // Em vez de esperar pelo 'spiderfied', podemos obter a lista de marcadores
+                    // do cluster e usá-los para identificar a localização.
+                    const childMarkers = a.layer.getAllChildMarkers();
+                    if (childMarkers.length > 0) {
+                        // Assumindo que todos os markers no cluster do zoom máximo representam o mesmo local
+                        // Se houver mais do que um, usar o primeiro para obter o nome do local
+                        const locationName = childMarkers[0].eventData.location; 
+                        this.openEventsListForLocation(locationName, childMarkers);
+                    }
+                }
+            });
+            
             this.map.addLayer(this.markerClusterGroup);
             this.markersLayer = L.layerGroup().addTo(this.map);
             
@@ -222,7 +245,10 @@ const EventsMap = {
         if (markersAdded > 0) {
             const bounds = this.markerClusterGroup.getBounds();
             if (bounds.isValid()) {
-                this.map.fitBounds(bounds, { padding: [50, 50] });
+                // Ajuste para um zoom menos apertado na vista inicial
+                this.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 4 }); 
+            } else {
+                this.map.setView([20, 0], 2);
             }
         }
 
@@ -240,6 +266,9 @@ const EventsMap = {
             opacity: 1,
             fillOpacity: 0.8
         });
+        
+        // NOVO: Anexar os dados do evento ao marcador
+        marker.eventData = event; 
 
         const eventDate = new Date(event.date);
         const formattedDate = eventDate.toLocaleDateString('en-US', { 
@@ -257,6 +286,12 @@ const EventsMap = {
                 style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #d91c1c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;"
             >
                 View Event Details
+            </button>
+            <button 
+                onclick="EventsMap.openEventsListForLocation('${event.location}')" 
+                style="margin-top: 0.25rem; padding: 0.5rem 1rem; background: #1c9cd9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;"
+            >
+                Show All Events at ${event.location}
             </button>
         `);
 
@@ -278,6 +313,249 @@ const EventsMap = {
         this.markerClusterGroup.addLayer(marker);
     },
 
+    // ==========================================================
+    // NOVAS FUNÇÕES PARA ABRIR E FILTRAR A LISTA DE EVENTOS
+    // ==========================================================
+    
+    openEventsListForLocation(locationName) {
+        console.log(`Opening event list for location: ${locationName}`);
+        
+        // 1. Filtrar todos os eventos agrupados para este local
+        const eventsAtLocation = this.groupedEvents.filter(e => e.location === locationName);
+        
+        if (eventsAtLocation.length === 0) {
+            alert(`No events found for location: ${locationName}`);
+            return;
+        }
+
+        const modal = document.getElementById('event-list-modal');
+        const content = document.getElementById('event-list-content');
+        
+        if (!modal || !content) {
+            console.error('Modal elements not found.');
+            return;
+        }
+        
+        // 2. Criar a interface da lista
+        content.innerHTML = this.createLocationEventsList(eventsAtLocation, locationName);
+        
+        // 3. Mostrar o modal
+        modal.style.display = 'block'; 
+        
+        // Fechar modal ao clicar fora
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // Fechar modal ao pressionar ESC
+        document.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // 4. Configurar a lógica de filtro de data
+        this.setupLocationListDateFilter(eventsAtLocation);
+    },
+
+    createLocationEventsList(events, locationName) {
+        // Gera o HTML do modal, incluindo controlos e o conteúdo inicial
+        const closeButton = `<span class="modal-close" onclick="document.getElementById('event-list-modal').style.display='none'">&times;</span>`;
+        
+        let html = `${closeButton}<h2>Events at ${locationName} (${events.length} total)</h2>`;
+        
+        // Controlo de Filtro de Data
+        html += '<div id="location-list-controls">';
+        html += '<label for="list-start-date">From:</label><input type="date" id="list-start-date">';
+        html += '<label for="list-end-date">To:</label><input type="date" id="list-end-date">';
+        html += '</div>';
+        
+        // NOVO: Container para a lista com cabeçalhos de ordenação
+        html += '<div id="filtered-location-events">';
+        
+        // NOVO: Cabeçalhos de Ordenação
+        html += '<div id="event-list-header" style="display: flex; justify-content: space-between; padding: 0.5rem 1.5rem 0.5rem 0.5rem; background: #2d2d2d; border-radius: 6px 6px 0 0; margin-top: 1rem;">';
+        html += '<div data-sort="date" data-direction="desc" class="sortable-header active-sort" style="cursor: pointer; color: #d91c1c; font-weight: bold; flex: 3;">Date (▼)</div>';
+        html += '<div data-sort="fights" data-direction="asc" class="sortable-header" style="cursor: pointer; color: #e0e0e0; font-weight: 500; flex: 1; text-align: right;">Fights (Asc)</div>';
+        html += '</div>';
+
+        html += '<div id="event-list-body-content">';
+        html += this.renderEventsList(events, 'date', 'desc'); // Renderização inicial
+        html += '</div>';
+        
+        html += '</div>'; // Fecha #filtered-location-events
+        
+        // Adicionar o listener para ordenação após a injeção do HTML
+        setTimeout(() => {
+            this.setupLocationListSorting(events);
+        }, 0);
+        
+        return html;
+    },
+
+    setupLocationListSorting(allEvents) {
+        const headers = document.querySelectorAll('#event-list-header .sortable-header');
+        const listContainer = document.getElementById('event-list-body-content');
+        
+        headers.forEach(header => {
+            header.addEventListener('click', (e) => {
+                const sortBy = header.getAttribute('data-sort');
+                let direction = header.getAttribute('data-direction');
+
+                // Toggle direction
+                direction = (direction === 'asc' ? 'desc' : 'asc');
+                header.setAttribute('data-direction', direction);
+
+                // Update active header and UI
+                headers.forEach(h => {
+                    h.classList.remove('active-sort');
+                    h.style.color = '#e0e0e0';
+                    h.style.fontWeight = '500';
+                    let text = h.textContent.replace(/\s*\(.*\)/, '');
+                    h.textContent = `${text} (Asc)`; // Resetting indicator
+                });
+
+                header.classList.add('active-sort');
+                header.style.color = '#d91c1c';
+                header.style.fontWeight = 'bold';
+                
+                let indicator = direction === 'desc' ? '▼' : '▲';
+                header.textContent = `${header.textContent.replace(/\s*\(.*\)/, '')} (${indicator})`;
+
+
+                // Obter filtros de data atuais (se existirem)
+                const startDateInput = document.getElementById('list-start-date');
+                const endDateInput = document.getElementById('list-end-date');
+                
+                // Obter a lista de eventos filtrada (a lógica de filtragem já deve ter sido aplicada)
+                // É mais eficiente aplicar o filtro de data aqui novamente para garantir que a ordenação
+                // é feita no subconjunto correto.
+                
+                const start = startDateInput.value ? new Date(startDateInput.value) : null;
+                const end = endDateInput.value ? new Date(endDateInput.value) : null;
+                
+                let filtered = allEvents;
+                
+                if (start || end) {
+                    filtered = allEvents.filter(event => {
+                        const eventDate = new Date(event.date);
+                        let isValid = true;
+                        if (start) isValid = isValid && eventDate >= start;
+                        if (end) {
+                            const endPlusOne = new Date(end);
+                            endPlusOne.setDate(endPlusOne.getDate() + 1);
+                            isValid = isValid && eventDate < endPlusOne;
+                        }
+                        return isValid;
+                    });
+                }
+
+
+                // Re-renderizar com a nova ordenação
+                listContainer.innerHTML = this.renderEventsList(filtered, sortBy, direction);
+            });
+        });
+    },
+
+    setupLocationListDateFilter(allEvents) {
+        const startDateInput = document.getElementById('list-start-date');
+        const endDateInput = document.getElementById('list-end-date');
+        const listContainer = document.getElementById('event-list-body-content'); // Mudar para o novo container
+        
+        // Obter estado de ordenação atual
+        const getSortState = () => {
+            const activeHeader = document.querySelector('#event-list-header .active-sort');
+            return activeHeader ? {
+                sortBy: activeHeader.getAttribute('data-sort'),
+                direction: activeHeader.getAttribute('data-direction')
+            } : { sortBy: 'date', direction: 'desc' };
+        };
+
+        const applyListFilter = () => {
+            const { sortBy, direction } = getSortState(); // Obter a ordenação atual
+            
+            const start = startDateInput.value ? new Date(startDateInput.value) : null;
+            const end = endDateInput.value ? new Date(endDateInput.value) : null;
+            
+            let filtered = allEvents;
+            
+            if (start || end) {
+                filtered = allEvents.filter(event => {
+                    const eventDate = new Date(event.date);
+                    let isValid = true;
+                    
+                    if (start) {
+                        isValid = isValid && eventDate >= start;
+                    }
+                    
+                    if (end) {
+                        const endPlusOne = new Date(end);
+                        endPlusOne.setDate(endPlusOne.getDate() + 1);
+                        isValid = isValid && eventDate < endPlusOne;
+                    }
+                    
+                    return isValid;
+                });
+            }
+            
+            listContainer.innerHTML = this.renderEventsList(filtered, sortBy, direction); // Aplicar ordenação
+        };
+        
+        startDateInput.addEventListener('change', applyListFilter);
+        endDateInput.addEventListener('change', applyListFilter);
+    },
+
+    // 2. Novo EventsMap.renderEventsList (Aplica a Ordenação)
+    renderEventsList(events, sortBy = 'date', direction = 'desc') {
+        // Função auxiliar para renderizar a lista de eventos
+        
+        events.sort((a, b) => {
+            let valA, valB;
+            
+            if (sortBy === 'date') {
+                valA = new Date(a.date);
+                valB = new Date(b.date);
+            } else if (sortBy === 'fights') {
+                valA = a.fightCount;
+                valB = b.fightCount;
+            }
+            
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        }); 
+        
+        if (events.length === 0) {
+            return '<p>No events found in this date range.</p>';
+        }
+        
+        let listHtml = '<ul>';
+        events.forEach(event => {
+            const eventDate = new Date(event.date);
+            const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                year: 'numeric', month: 'short', day: 'numeric' 
+            });
+            
+            listHtml += `
+                <li style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="flex: 3;">
+                        <strong>${formattedDate}</strong>
+                    </span>
+                    <span style="flex: 1; text-align: right; margin-right: 1.5rem; font-weight: bold;">
+                        ${event.fightCount}
+                    </span>
+                    <button onclick="EventsMap.showEventDetails('${event.event_id}'); document.getElementById('event-list-modal').style.display='none';">
+                        View Details
+                    </button>
+                </li>
+            `;
+        });
+        listHtml += '</ul>';
+        return listHtml;
+    },
+    
     showEventDetails(eventId) {
         console.log(`Showing details for event: ${eventId}`);
         
@@ -303,6 +581,7 @@ const EventsMap = {
     },
 
     setupControls() {
+        // ... (o seu código existente para setupControls) ...
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -347,6 +626,7 @@ const EventsMap = {
     },
 
     applyFilters() {
+        // ... (o seu código existente para applyFilters) ...
         const searchInput = document.getElementById('event-search');
         const startDate = document.getElementById('start-date');
         const endDate = document.getElementById('end-date');
