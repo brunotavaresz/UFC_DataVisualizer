@@ -598,11 +598,33 @@ const FighterComparison = {
             return;
         }
 
+        // Check if fighters are from different divisions
+        const division1 = this.fighter1.division || 'unknown';
+        const division2 = this.fighter2.division || 'unknown';
+        
+        if (division1 !== division2 && division1 !== 'unknown' && division2 !== 'unknown') {
+            // Show custom modal for different divisions
+            this.showDivisionWarningModal(() => {
+                // Callback on confirm - proceed with comparison
+                if (typeof FighterComparisonResult !== 'undefined' && typeof FighterComparisonResult.show === 'function') {
+                    try {
+                        FighterComparisonResult.show(this.fighter1, this.fighter2, 'details');
+                    } catch (err) {
+                        console.error('Error invoking FighterComparisonResult.show:', err);
+                    }
+                }
+            }, () => {
+                // Callback on cancel - recreate compare button
+                this.createCompareButton();
+            });
+            return;
+        }
+
         // If the full comparison module is available, delegate rendering to it.
         // FighterComparisonResult.show handles navigation, loading state and rendering.
         if (typeof FighterComparisonResult !== 'undefined' && typeof FighterComparisonResult.show === 'function') {
             try {
-                FighterComparisonResult.show(this.fighter1, this.fighter2);
+                FighterComparisonResult.show(this.fighter1, this.fighter2, 'details'); // Pass 'details' as source
             } catch (err) {
                 console.error('Error invoking FighterComparisonResult.show:', err);
                 // Fallback to simple navigation/placeholder if something fails
@@ -638,5 +660,140 @@ const FighterComparison = {
                 </div>
             `;
         }
+    },
+    
+    showDivisionWarningModal(onConfirm, onCancel) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.2s ease;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            border: 2px solid #d91c1c;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(217, 28, 28, 0.4);
+            animation: slideUp 0.3s ease;
+        `;
+        
+        modalContent.innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <h2 style="color: #fff; margin: 0 0 1rem 0; font-size: 1.5rem;">Different Weight Divisions</h2>
+                <p style="color: #888; margin-bottom: 1.5rem; line-height: 1.6;">
+                    Are you sure you want to compare fighters from different divisions?
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="modal-cancel" style="
+                        background: transparent;
+                        border: 2px solid #444;
+                        color: #888;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        transition: all 0.3s ease;
+                    ">Cancel</button>
+                    <button id="modal-confirm" style="
+                        background: linear-gradient(135deg, #d91c1c, #ff4444);
+                        border: none;
+                        color: white;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(217, 28, 28, 0.4);
+                    ">Compare Anyway</button>
+                </div>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Event listeners
+        const cancelBtn = modal.querySelector('#modal-cancel');
+        const confirmBtn = modal.querySelector('#modal-confirm');
+        
+        const closeModal = () => {
+            modal.style.animation = 'fadeOut 0.2s ease';
+            setTimeout(() => {
+                modal.remove();
+                style.remove();
+            }, 200);
+        };
+        
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
+            if (onCancel) onCancel();
+        });
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.borderColor = '#d91c1c';
+            cancelBtn.style.color = '#d91c1c';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.borderColor = '#444';
+            cancelBtn.style.color = '#888';
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            closeModal();
+            onConfirm();
+        });
+        confirmBtn.addEventListener('mouseenter', () => {
+            confirmBtn.style.transform = 'scale(1.05)';
+            confirmBtn.style.boxShadow = '0 6px 20px rgba(217, 28, 28, 0.6)';
+        });
+        confirmBtn.addEventListener('mouseleave', () => {
+            confirmBtn.style.transform = 'scale(1)';
+            confirmBtn.style.boxShadow = '0 4px 12px rgba(217, 28, 28, 0.4)';
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+                if (onCancel) onCancel();
+            }
+        });
+        
+        const fadeOutStyle = document.createElement('style');
+        fadeOutStyle.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(fadeOutStyle);
     }
 };

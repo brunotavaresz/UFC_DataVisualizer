@@ -2,10 +2,12 @@
 const FighterComparisonResult = {
     fighter1: null,
     fighter2: null,
+    sourceContext: null, // Track where comparison was initiated from
     
-    async show(fighter1, fighter2) {
+    async show(fighter1, fighter2, source = null) {
         this.fighter1 = fighter1;
         this.fighter2 = fighter2;
+        this.sourceContext = source; // 'table' or 'details' or null
         
         Navigation.navigateTo('fighter-comparison-result');
         
@@ -131,7 +133,15 @@ const FighterComparisonResult = {
             backBtn.style.borderColor = '#333';
         });
         backBtn.addEventListener('click', () => {
-            Navigation.navigateTo('fighter-comparison-select');
+            // Go back to where the comparison was initiated from
+            if (this.sourceContext === 'table') {
+                Navigation.navigateTo('fighters');
+            } else if (this.sourceContext === 'details') {
+                Navigation.navigateTo('fighter-comparison-select');
+            } else {
+                // Default: try to go back to fighters table
+                Navigation.navigateTo('fighters');
+            }
         });
         
         header.appendChild(backBtn);
@@ -321,14 +331,43 @@ const FighterComparisonResult = {
         nickname.setAttribute('aria-hidden', fighter.nickname ? 'false' : 'true');
         card.appendChild(nickname);
         
-        // Record
+        // Record with colored wins/losses/draws
         const record = document.createElement('div');
         record.style.cssText = `
-            color: #888;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         `;
-        record.textContent = `${fighter.wins}-${fighter.losses}-${fighter.draws}`;
+        
+        const winsSpan = document.createElement('span');
+        winsSpan.style.color = '#4ade80'; // Green
+        winsSpan.textContent = fighter.wins;
+        
+        const separator1 = document.createElement('span');
+        separator1.style.color = '#666';
+        separator1.textContent = '-';
+        
+        const lossesSpan = document.createElement('span');
+        lossesSpan.style.color = '#ef4444'; // Red
+        lossesSpan.textContent = fighter.losses;
+        
+        const separator2 = document.createElement('span');
+        separator2.style.color = '#666';
+        separator2.textContent = '-';
+        
+        const drawsSpan = document.createElement('span');
+        drawsSpan.style.color = '#fbbf24'; // Yellow
+        drawsSpan.textContent = fighter.draws;
+        
+        record.appendChild(winsSpan);
+        record.appendChild(separator1);
+        record.appendChild(lossesSpan);
+        record.appendChild(separator2);
+        record.appendChild(drawsSpan);
         card.appendChild(record);
         
         // Quick Stats
@@ -341,10 +380,10 @@ const FighterComparisonResult = {
         `;
         
         const stats = [
-            { label: 'Age', value: fighter.age || '-' },
-            { label: 'Win Rate', value: `${fighter.winRate}%` },
-            { label: 'Height', value: cmToFeetInches(fighter.height) },
-            { label: 'Weight', value: kgToLbs(fighter.weight) }
+            { label: 'Age', value: fighter.age || '-', color: '#fff' },
+            { label: 'Win Rate', value: `${fighter.winRate}%`, color: '#4ade80' }, // Green like wins
+            { label: 'Height', value: cmToFeetInches(fighter.height), color: '#fff' },
+            { label: 'Weight', value: kgToLbs(fighter.weight), color: '#fff' }
         ];
         
         stats.forEach(stat => {
@@ -366,7 +405,7 @@ const FighterComparisonResult = {
             
             const value = document.createElement('div');
             value.style.cssText = `
-                color: #fff;
+                color: ${stat.color};
                 font-size: 1.1rem;
                 font-weight: 600;
             `;
