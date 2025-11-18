@@ -15,97 +15,97 @@ const FightersTable = {
     },
     
     setupFilters() {
-    // Search input
-    const searchInput = document.getElementById('search-fighter');
-    searchInput.addEventListener('input', debounce(() => {
-        this.render();
-    }, 400));
-    
-    // Division filter
-    document.getElementById('filter-division').addEventListener('change', () => {
-        this.render();
-    });
-    
-    // Stance filter
-    document.getElementById('filter-stance').addEventListener('change', () => {
-        this.render();
-    });
-    
-    // Win rate filters
-    document.getElementById('winrate-min').addEventListener('input', debounce(() => {
-        this.render();
-    }, 600));
-    document.getElementById('winrate-max').addEventListener('input', debounce(() => {
-        this.render();
-    }, 600));
-    
-    // Age filters
-    document.getElementById('age-min').addEventListener('input', debounce(() => {
-        this.render();
-    }, 600));
-    document.getElementById('age-max').addEventListener('input', debounce(() => {
-        this.render();
-    }, 600));
-    
-    // Height dual slider (only feet/inches)
-    this.setupDualSlider('height', 150, 215, (val) => cmToFeetInches(val));
-    
-    // Weight dual slider (only lbs)
-    this.setupDualSlider('weight', 50, 130, (val) => kgToLbs(val));
-    
-    // Clear filters button
-    document.getElementById('clear-filters').addEventListener('click', () => {
-        this.clearFilters();
-    });
-},
+        // Search input
+        const searchInput = document.getElementById('search-fighter');
+        searchInput.addEventListener('input', debounce(() => {
+            this.render();
+        }, 400));
+        
+        // Division filter
+        document.getElementById('filter-division').addEventListener('change', () => {
+            this.render();
+        });
+        
+        // Stance filter
+        document.getElementById('filter-stance').addEventListener('change', () => {
+            this.render();
+        });
+        
+        // Win rate filters
+        document.getElementById('winrate-min').addEventListener('input', debounce(() => {
+            this.render();
+        }, 600));
+        document.getElementById('winrate-max').addEventListener('input', debounce(() => {
+            this.render();
+        }, 600));
+        
+        // Age filters
+        document.getElementById('age-min').addEventListener('input', debounce(() => {
+            this.render();
+        }, 600));
+        document.getElementById('age-max').addEventListener('input', debounce(() => {
+            this.render();
+        }, 600));
+        
+        // Height dual slider (only feet/inches)
+        this.setupDualSlider('height', 150, 215, (val) => cmToFeetInches(val));
+        
+        // Weight dual slider (only lbs)
+        this.setupDualSlider('weight', 50, 130, (val) => kgToLbs(val));
+        
+        // Clear filters button
+        document.getElementById('clear-filters').addEventListener('click', () => {
+            this.clearFilters();
+        });
+    },
 
-setupDualSlider(name, min, max, formatter) {
-    const minSlider = document.getElementById(`${name}-min`);
-    const maxSlider = document.getElementById(`${name}-max`);
-    const minDisplay = document.getElementById(`${name}-min-display`);
-    const maxDisplay = document.getElementById(`${name}-max-display`);
-    const wrapper = minSlider.parentElement;
-    
-    const updateSlider = () => {
-        let minVal = parseInt(minSlider.value);
-        let maxVal = parseInt(maxSlider.value);
+    setupDualSlider(name, min, max, formatter) {
+        const minSlider = document.getElementById(`${name}-min`);
+        const maxSlider = document.getElementById(`${name}-max`);
+        const minDisplay = document.getElementById(`${name}-min-display`);
+        const maxDisplay = document.getElementById(`${name}-max-display`);
+        const wrapper = minSlider.parentElement;
         
-        // Garantir que min nunca ultrapassa max
-        if (minVal > maxVal) {
-            minSlider.value = maxVal;
-            minVal = maxVal;
-        }
+        const updateSlider = () => {
+            let minVal = parseInt(minSlider.value);
+            let maxVal = parseInt(maxSlider.value);
+            
+            // Garantir que min nunca ultrapassa max
+            if (minVal > maxVal) {
+                minSlider.value = maxVal;
+                minVal = maxVal;
+            }
+            
+            // Garantir que max nunca fica abaixo de min
+            if (maxVal < minVal) {
+                maxSlider.value = minVal;
+                maxVal = minVal;
+            }
+            
+            // Update displays
+            minDisplay.textContent = formatter(minVal);
+            maxDisplay.textContent = formatter(maxVal);
+            
+            // Update visual range (red line between thumbs)
+            const percentMin = ((minVal - min) / (max - min)) * 100;
+            const percentMax = ((max - maxVal) / (max - min)) * 100;
+            wrapper.style.setProperty('--range-start', `${percentMin}%`);
+            wrapper.style.setProperty('--range-end', `${percentMax}%`);
+        };
         
-        // Garantir que max nunca fica abaixo de min
-        if (maxVal < minVal) {
-            maxSlider.value = minVal;
-            maxVal = minVal;
-        }
+        minSlider.addEventListener('input', debounce(() => {
+            updateSlider();
+            this.render();
+        }, 400));
         
-        // Update displays
-        minDisplay.textContent = formatter(minVal);
-        maxDisplay.textContent = formatter(maxVal);
+        maxSlider.addEventListener('input', debounce(() => {
+            updateSlider();
+            this.render();
+        }, 400));
         
-        // Update visual range (red line between thumbs)
-        const percentMin = ((minVal - min) / (max - min)) * 100;
-        const percentMax = ((max - maxVal) / (max - min)) * 100;
-        wrapper.style.setProperty('--range-start', `${percentMin}%`);
-        wrapper.style.setProperty('--range-end', `${percentMax}%`);
-    };
-    
-    minSlider.addEventListener('input', debounce(() => {
+        // Initialize
         updateSlider();
-        this.render();
-    }, 400));
-    
-    maxSlider.addEventListener('input', debounce(() => {
-        updateSlider();
-        this.render();
-    }, 400));
-    
-    // Initialize
-    updateSlider();
-},
+    },
     
     setupSort() {
         document.querySelectorAll('#fighters-table th[data-sort]').forEach(th => {
@@ -150,57 +150,176 @@ setupDualSlider(name, min, max, formatter) {
     },
     
     getFilterCriteria() {
-    const heightMin = document.getElementById('height-min').value;
-    const heightMax = document.getElementById('height-max').value;
-    const weightMin = document.getElementById('weight-min').value;
-    const weightMax = document.getElementById('weight-max').value;
-    
-    return {
-        search: document.getElementById('search-fighter').value,
-        division: document.getElementById('filter-division').value,
-        stance: document.getElementById('filter-stance').value,
-        winRateMin: document.getElementById('winrate-min').value ? +document.getElementById('winrate-min').value : null,
-        winRateMax: document.getElementById('winrate-max').value ? +document.getElementById('winrate-max').value : null,
-        ageMin: document.getElementById('age-min').value ? +document.getElementById('age-min').value : null,
-        ageMax: document.getElementById('age-max').value ? +document.getElementById('age-max').value : null,
-        heightMin: heightMin ? +heightMin : null,
-        heightMax: heightMax ? +heightMax : null,
-        weightMin: weightMin ? +weightMin : null,
-        weightMax: weightMax ? +weightMax : null
+        const heightMin = document.getElementById('height-min').value;
+        const heightMax = document.getElementById('height-max').value;
+        const weightMin = document.getElementById('weight-min').value;
+        const weightMax = document.getElementById('weight-max').value;
+        
+        return {
+            search: document.getElementById('search-fighter').value,
+            division: document.getElementById('filter-division').value,
+            stance: document.getElementById('filter-stance').value,
+            winRateMin: document.getElementById('winrate-min').value ? +document.getElementById('winrate-min').value : null,
+            winRateMax: document.getElementById('winrate-max').value ? +document.getElementById('winrate-max').value : null,
+            ageMin: document.getElementById('age-min').value ? +document.getElementById('age-min').value : null,
+            ageMax: document.getElementById('age-max').value ? +document.getElementById('age-max').value : null,
+            heightMin: heightMin ? +heightMin : null,
+            heightMax: heightMax ? +heightMax : null,
+            weightMin: weightMin ? +weightMin : null,
+            weightMax: weightMax ? +weightMax : null
         };
     },
     
     clearFilters() {
-    document.getElementById('search-fighter').value = '';
-    document.getElementById('filter-division').value = '';
-    document.getElementById('filter-stance').value = '';
-    document.getElementById('winrate-min').value = '';
-    document.getElementById('winrate-max').value = '';
-    document.getElementById('age-min').value = '';
-    document.getElementById('age-max').value = '';
+        document.getElementById('search-fighter').value = '';
+        document.getElementById('filter-division').value = '';
+        document.getElementById('filter-stance').value = '';
+        document.getElementById('winrate-min').value = '';
+        document.getElementById('winrate-max').value = '';
+        document.getElementById('age-min').value = '';
+        document.getElementById('age-max').value = '';
+        
+        // Reset height slider
+        document.getElementById('height-min').value = 150;
+        document.getElementById('height-max').value = 215;
+        document.getElementById('height-min-display').textContent = cmToFeetInches(150);
+        document.getElementById('height-max-display').textContent = cmToFeetInches(215);
+        
+        // Reset weight slider
+        document.getElementById('weight-min').value = 50;
+        document.getElementById('weight-max').value = 130;
+        document.getElementById('weight-min-display').textContent = kgToLbs(50);
+        document.getElementById('weight-max-display').textContent = kgToLbs(130);
+        
+        // Reset visual ranges
+        const heightWrapper = document.getElementById('height-min').parentElement;
+        const weightWrapper = document.getElementById('weight-min').parentElement;
+        heightWrapper.style.setProperty('--range-start', '0%');
+        heightWrapper.style.setProperty('--range-end', '0%');
+        weightWrapper.style.setProperty('--range-start', '0%');
+        weightWrapper.style.setProperty('--range-end', '0%');
+        
+        this.render();
+    },
+
+    getActiveFilters() {
+        const criteria = this.getFilterCriteria();
+        const active = [];
+        
+        if (criteria.search) {
+            active.push({ type: 'search', label: `Search: "${criteria.search}"`, value: criteria.search });
+        }
+        
+        if (criteria.division) {
+            active.push({ type: 'division', label: `Division: ${this.formatDivision(criteria.division)}`, value: criteria.division });
+        }
+        
+        if (criteria.stance) {
+            active.push({ type: 'stance', label: `Stance: ${formatStance(criteria.stance)}`, value: criteria.stance });
+        }
+        
+        if (criteria.winRateMin !== null || criteria.winRateMax !== null) {
+            const min = criteria.winRateMin ?? 0;
+            const max = criteria.winRateMax ?? 100;
+            active.push({ type: 'winrate', label: `Win Rate: ${min}%-${max}%`, value: { min, max } });
+        }
+        
+        if (criteria.ageMin !== null || criteria.ageMax !== null) {
+            const min = criteria.ageMin ?? 18;
+            const max = criteria.ageMax ?? 50;
+            active.push({ type: 'age', label: `Age: ${min}-${max}`, value: { min, max } });
+        }
+        
+        if (criteria.heightMin !== null && criteria.heightMin > 150 || criteria.heightMax !== null && criteria.heightMax < 215) {
+            const min = criteria.heightMin ?? 150;
+            const max = criteria.heightMax ?? 215;
+            active.push({ type: 'height', label: `Height: ${cmToFeetInches(min)} - ${cmToFeetInches(max)}`, value: { min, max } });
+        }
+        
+        if (criteria.weightMin !== null && criteria.weightMin > 50 || criteria.weightMax !== null && criteria.weightMax < 130) {
+            const min = criteria.weightMin ?? 50;
+            const max = criteria.weightMax ?? 130;
+            active.push({ type: 'weight', label: `Weight: ${kgToLbs(min)} - ${kgToLbs(max)}`, value: { min, max } });
+        }
+        
+        return active;
+    },
     
-    // Reset height slider
-    document.getElementById('height-min').value = 150;
-    document.getElementById('height-max').value = 215;
-    document.getElementById('height-min-display').textContent = cmToFeetInches(150);
-    document.getElementById('height-max-display').textContent = cmToFeetInches(215);
+    removeFilter(filterType) {
+        switch(filterType) {
+            case 'search':
+                document.getElementById('search-fighter').value = '';
+                break;
+            case 'division':
+                document.getElementById('filter-division').value = '';
+                break;
+            case 'stance':
+                document.getElementById('filter-stance').value = '';
+                break;
+            case 'winrate':
+                document.getElementById('winrate-min').value = '';
+                document.getElementById('winrate-max').value = '';
+                break;
+            case 'age':
+                document.getElementById('age-min').value = '';
+                document.getElementById('age-max').value = '';
+                break;
+            case 'height':
+                document.getElementById('height-min').value = 150;
+                document.getElementById('height-max').value = 215;
+                document.getElementById('height-min-display').textContent = cmToFeetInches(150);
+                document.getElementById('height-max-display').textContent = cmToFeetInches(215);
+                const heightWrapper = document.getElementById('height-min').parentElement;
+                heightWrapper.style.setProperty('--range-start', '0%');
+                heightWrapper.style.setProperty('--range-end', '0%');
+                break;
+            case 'weight':
+                document.getElementById('weight-min').value = 50;
+                document.getElementById('weight-max').value = 130;
+                document.getElementById('weight-min-display').textContent = kgToLbs(50);
+                document.getElementById('weight-max-display').textContent = kgToLbs(130);
+                const weightWrapper = document.getElementById('weight-min').parentElement;
+                weightWrapper.style.setProperty('--range-start', '0%');
+                weightWrapper.style.setProperty('--range-end', '0%');
+                break;
+        }
+        this.render();
+    },
     
-    // Reset weight slider
-    document.getElementById('weight-min').value = 50;
-    document.getElementById('weight-max').value = 130;
-    document.getElementById('weight-min-display').textContent = kgToLbs(50);
-    document.getElementById('weight-max-display').textContent = kgToLbs(130);
-    
-    // Reset visual ranges
-    const heightWrapper = document.getElementById('height-min').parentElement;
-    const weightWrapper = document.getElementById('weight-min').parentElement;
-    heightWrapper.style.setProperty('--range-start', '0%');
-    heightWrapper.style.setProperty('--range-end', '0%');
-    weightWrapper.style.setProperty('--range-start', '0%');
-    weightWrapper.style.setProperty('--range-end', '0%');
-    
-    this.render();
-},
+    renderActiveFilters() {
+        const container = document.getElementById('active-filters-container');
+        const activeFilters = this.getActiveFilters();
+        
+        if (activeFilters.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+        const tagsHtml = activeFilters.map(filter => `
+            <span class="filter-tag" data-filter-type="${filter.type}">
+                ${filter.label}
+                <button class="filter-tag-remove" aria-label="Remove filter">×</button>
+            </span>
+        `).join('');
+        
+        container.innerHTML = `
+            <div class="active-filters-header">
+                <span>Active Filters (${activeFilters.length})</span>
+            </div>
+            <div class="active-filters-tags">
+                ${tagsHtml}
+            </div>
+        `;
+        
+        // Add click handlers for remove buttons
+        container.querySelectorAll('.filter-tag-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const filterType = e.target.closest('.filter-tag').getAttribute('data-filter-type');
+                this.removeFilter(filterType);
+            });
+        });
+    },
     
     // Format division name for display
     formatDivision(division) {
@@ -232,6 +351,9 @@ setupDualSlider(name, min, max, formatter) {
             if (this.sortColumn) {
                 this.filteredData = sortBy(this.filteredData, this.sortColumn, this.sortAscending);
             }
+            
+            // Render active filters display
+            this.renderActiveFilters();
             
             // Render table
             const tbody = document.getElementById('fighters-tbody');

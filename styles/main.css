@@ -318,6 +318,72 @@ button {
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
+/* ========== ACTIVE FILTERS ========== */
+.active-filters-container {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-left: 4px solid #d91c1c;
+}
+
+.active-filters-header {
+    color: #d91c1c;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+.active-filters-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(217, 28, 28, 0.15);
+    border: 1px solid rgba(217, 28, 28, 0.3);
+    color: #fff;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.filter-tag:hover {
+    background: rgba(217, 28, 28, 0.25);
+    border-color: rgba(217, 28, 28, 0.5);
+}
+
+.filter-tag-remove {
+    background: none;
+    border: none;
+    color: #d91c1c;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    font-weight: 700;
+}
+
+.filter-tag-remove:hover {
+    background: rgba(217, 28, 28, 0.3);
+    transform: scale(1.1);
+}
 
 table {
     width: 100%;

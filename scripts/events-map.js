@@ -308,40 +308,119 @@ const EventsMap = {
             resetBtn.addEventListener('click', () => {
                 console.log('Reset button clicked');
                 this.map.setView([20, 0], 2);
+                
+                // Reset filters
+                const searchInput = document.getElementById('event-search');
+                const startDate = document.getElementById('start-date');
+                const endDate = document.getElementById('end-date');
+                
+                if (searchInput) searchInput.value = '';
+                if (startDate) startDate.value = '';
+                if (endDate) endDate.value = '';
+                
+                this.showAllEvents();
             });
         }
 
         const searchInput = document.getElementById('event-search');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                this.filterEvents(e.target.value);
+                this.applyFilters();
+            });
+        }
+
+        // Date filters
+        const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
+        
+        if (startDate) {
+            startDate.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
+        
+        if (endDate) {
+            endDate.addEventListener('change', () => {
+                this.applyFilters();
             });
         }
     },
 
-    filterEvents(searchTerm) {
-        if (!searchTerm) {
-            this.showAllEvents();
-            return;
+    applyFilters() {
+        const searchInput = document.getElementById('event-search');
+        const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
+        
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const startDateValue = startDate ? startDate.value : '';
+        const endDateValue = endDate ? endDate.value : '';
+        
+        let filtered = this.groupedEvents;
+        
+        // Location filter
+        if (searchTerm) {
+            filtered = filtered.filter(event => 
+                event.location.toLowerCase().includes(searchTerm) ||
+                event.city.toLowerCase().includes(searchTerm) ||
+                event.country.toLowerCase().includes(searchTerm) ||
+                event.date.includes(searchTerm)
+            );
         }
-
-        const term = searchTerm.toLowerCase();
-        const filtered = this.groupedEvents.filter(event => 
-            event.location.toLowerCase().includes(term) ||
-            event.city.toLowerCase().includes(term) ||
-            event.country.toLowerCase().includes(term) ||
-            event.date.includes(term)
-        );
-
+        
+        // Date range filter
+        if (startDateValue || endDateValue) {
+            filtered = filtered.filter(event => {
+                const eventDate = new Date(event.date);
+                let isValid = true;
+                
+                if (startDateValue) {
+                    const start = new Date(startDateValue);
+                    isValid = isValid && eventDate >= start;
+                }
+                
+                if (endDateValue) {
+                    const end = new Date(endDateValue);
+                    // Add one day to include the end date
+                    end.setDate(end.getDate() + 1);
+                    isValid = isValid && eventDate < end;
+                }
+                
+                return isValid;
+            });
+        }
+        
+        // Update map markers
         this.markerClusterGroup.clearLayers();
-
+        
         filtered.forEach(event => {
             const coords = this.coordinatesData[event.location];
             if (coords) {
                 this.addEventMarker(event, [coords.lat, coords.lng]);
             }
         });
-
+        
+        // Update event count
+        const eventsEl = document.getElementById('total-events-map');
+        if (eventsEl) {
+            eventsEl.textContent = filtered.length;
+        }
+        
         console.log(`Filtered to ${filtered.length} events`);
+        
+        // Adjust map bounds to filtered events
+        if (filtered.length > 0) {
+            setTimeout(() => {
+                const bounds = this.markerClusterGroup.getBounds();
+                if (bounds.isValid()) {
+                    this.map.fitBounds(bounds, { padding: [50, 50] });
+                }
+            }, 100);
+        }
+    },
+
+    filterEvents(searchTerm) {
+        // This method is kept for backward compatibility
+        // But now uses applyFilters()
+        this.applyFilters();
     }
 };
