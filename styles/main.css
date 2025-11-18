@@ -980,6 +980,81 @@ svg {
     z-index: 1;
 }
 
+/* Estilos para a secção de Controlo de Eventos */
+.controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center; /* Alinha tudo verticalmente */
+}
+
+/* 1. Estilização para o Input de Pesquisa e Inputs de Data */
+.controls input[type="text"],
+.controls input[type="date"] {
+    background-color: #333; /* Fundo escuro coeso */
+    color: #fff; /* Texto branco */
+    border: 1px solid #555;
+    padding: 0.75rem 1rem; /* Padronizado com o botão */
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.5;
+    
+    /* ESSENCIAL: Anular o estilo nativo do campo de data */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%; /* Garantir que os inputs preenchem o espaço no filter-group */
+    box-sizing: border-box;
+}
+
+.controls input[type="text"]:focus,
+.controls input[type="date"]:focus {
+    border-color: #d91c1c;
+    box-shadow: 0 0 0 3px rgba(217, 28, 28, 0.4);
+    outline: none;
+}
+
+/* 2. Estilização Específica para o Ícone do Calendário */
+.controls input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* Torna o ícone branco */
+    opacity: 0.9;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+/* 3. Layout do Controlo de Datas */
+.date-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-group-date {
+    display: flex;
+    flex-direction: row; /* Coloca a etiqueta e o input lado a lado */
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group-date label {
+    /* Estilo para as etiquetas "From" e "To" */
+    color: #888;
+    font-size: 0.85rem;
+    white-space: nowrap; /* Evita que a etiqueta quebre */
+    margin-bottom: 0; /* Remove a margem extra do HTML antigo */
+}
+
+/* Garantir que o botão tem o mesmo alinhamento */
+.controls .btn {
+    /* ... Seu estilo btn existente ... */
+    height: 44px; /* Ajustar a altura para coincidir com os inputs */
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
 /* ========== EVENT DETAILS PAGE ========== */
 .event-detail-header {
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);

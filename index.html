@@ -156,7 +156,7 @@
                 <thead>
                     <tr>
                         <th class="checkbox-header" style="width: 50px;">
-                            <span title="Select fighters to compare">⚔️</span>
+                            <span title="Select fighters to compare"></span>
                         </th>
                         <th data-sort="name">Name</th>
                         <th data-sort="nickname">Nickname</th>
@@ -282,32 +282,24 @@
         </div>
 
         <div class="controls">
-            <div class="filter-group" style="flex: 1;">
-                <input type="text" id="event-search" placeholder="Search events by location, city, or date...">
-            </div>
-            
-            <!-- Date Range Filter -->
-            <div style="display: flex; gap: 10px;">
-                <div style="display: flex; flex-direction: column;">
-                    <label for="start-date" style="margin-bottom: 5px; color: #888; font-size: 0.85rem;">From:</label>
-                    <input 
-                        type="date" 
-                        id="start-date" 
-                        style="padding: 8px; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 4px;"
-                    >
-                </div>
-                <div style="display: flex; flex-direction: column;">
-                    <label for="end-date" style="margin-bottom: 5px; color: #888; font-size: 0.85rem;">To:</label>
-                    <input 
-                        type="date" 
-                        id="end-date" 
-                        style="padding: 8px; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 4px;"
-                    >
-                </div>
-            </div>
-            
-            <button class="btn" id="reset-btn">Reset View</button>
+    <div class="filter-group" style="flex: 1;">
+        <input type="text" id="event-search" placeholder="Search events by location or city...">
+    </div>
+    
+    <div class="date-controls">
+        <div class="filter-group-date">
+            <label for="start-date">From:</label>
+            <input type="date" id="start-date">
         </div>
+        
+        <div class="filter-group-date">
+            <label for="end-date">To:</label>
+            <input type="date" id="end-date">
+        </div>
+    </div>
+    
+    <button class="btn" id="reset-btn">Reset View</button>
+</div>
 
         <div class="map-container">
             <div id="map"></div>
