@@ -328,6 +328,7 @@ const FighterDetails = {
         `;
         
         rightPanel.appendChild(this.createRecordSection(f));
+        rightPanel.appendChild(this.createFighterEvolution(f)); // ← ADICIONE ESTA LINHA
         
         const metricsGrid = document.createElement('div');
         metricsGrid.style.cssText = `
@@ -1538,6 +1539,161 @@ const FighterDetails = {
         
         return container;
     },
+
+    createFighterEvolution(f) {
+        const container = document.createElement('div');
+        container.style.cssText = `
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid #333;
+            margin-bottom: 1.5rem;
+        `;
+        
+        const header = document.createElement('div');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        `;
+        
+        const title = document.createElement('h2');
+        title.style.cssText = `
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+            cursor: help;
+        `;
+        title.textContent = 'Fight Evolution';
+        
+        title.addEventListener('mouseenter', (e) => {
+            this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance changes across fights.<br>Shows wins/losses and key stats over time.', e.clientX, e.clientY);
+        });
+        
+        title.addEventListener('mouseleave', () => {
+            this.hideTooltip();
+        });
+        
+        title.addEventListener('mousemove', (e) => {
+            this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance changes across fights.<br>Shows wins/losses and key stats over time.', e.clientX, e.clientY);
+        });
+        
+        header.appendChild(title);
+        
+        // Metric selector
+        const selectorWrapper = document.createElement('div');
+        selectorWrapper.style.cssText = `
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        `;
+        
+        const selectorLabel = document.createElement('span');
+        selectorLabel.style.cssText = `
+            color: #888;
+            font-size: 0.9rem;
+        `;
+        selectorLabel.textContent = 'Metric:';
+        
+        const selector = document.createElement('select');
+        selector.id = 'evolution-metric-selector';
+        selector.style.cssText = `
+            background: #2d2d2d;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        `;
+        
+        const metrics = [
+            { value: 'striking_acc', label: 'Striking Accuracy' },
+            { value: 'striking_def', label: 'Striking Defense' },
+            { value: 'sig_strikes', label: 'Significant Strikes' },
+            { value: 'takedowns', label: 'Takedowns' },
+            { value: 'control_time', label: 'Control Time' }
+        ];
+        
+        metrics.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m.value;
+            option.textContent = m.label;
+            selector.appendChild(option);
+        });
+        
+        selector.addEventListener('change', () => {
+            this.updateEvolutionChart(f, selector.value);
+        });
+        
+        selectorWrapper.appendChild(selectorLabel);
+        selectorWrapper.appendChild(selector);
+        header.appendChild(selectorWrapper);
+        
+        container.appendChild(header);
+        
+        // Chart container
+        const chartContainer = document.createElement('div');
+        chartContainer.id = 'evolution-chart';
+        chartContainer.style.cssText = `
+            width: 100%;
+            height: 400px;
+            position: relative;
+        `;
+        container.appendChild(chartContainer);
+        
+        // Load and render initial chart
+        setTimeout(() => {
+            this.loadFighterFights(f);
+            this.updateEvolutionChart(f, 'striking_acc');
+        }, 100);
+        
+        return container;
+    },
+    
+    loadFighterFights(fighter) {
+        // Get all fights for this fighter from both red and blue corner
+        const allFights = [];
+        
+        // Check UFC.csv data
+        if (window.ufcData) {
+            window.ufcData.forEach(fight => {
+                if (fight.r_id === fighter.id || fight.b_id === fighter.id) {
+                    const isRed = fight.r_id === fighter.id;
+                    const won = fight.winner_id === fighter.id;
+                    
+                    allFights.push({
+                        date: new Date(fight.date),
+                        event: fight.event_name,
+                        opponent: isRed ? fight.b_name : fight.r_name,
+                        result: won ? 'W' : 'L',
+                        method: fight.method,
+                        round: fight.finish_round,
+                        // Fighter's stats
+                        sig_str_landed: isRed ? fight.r_sig_str_landed : fight.b_sig_str_landed,
+                        sig_str_attempted: isRed ? fight.r_sig_str_atmpted : fight.b_sig_str_atmpted,
+                        sig_str_acc: isRed ? fight.r_sig_str_acc : fight.b_sig_str_acc,
+                        total_str_landed: isRed ? fight.r_total_str_landed : fight.b_total_str_landed,
+                        str_def: isRed ? fight.r_str_def : fight.b_str_def,
+                        td_landed: isRed ? fight.r_td_landed : fight.b_td_landed,
+                        td_attempted: isRed ? fight.r_td_atmpted : fight.b_td_atmpted,
+                        ctrl_time: isRed ? fight.r_ctrl : fight.b_ctrl,
+                        kd: isRed ? fight.r_kd : fight.b_kd
+                    });
+                }
+            });
+        }
+        
+        // Sort by date
+        allFights.sort((a, b) => a.date - b.date);
+        
+        // Store in fighter object
+        fighter.fightHistory = allFights;
+        
+        console.log(`Loaded ${allFights.length} fights for ${fighter.name}`);
+    },
     
     showFullBodyModal(photoUrl, fighterName) {
         const modal = document.createElement('div');
@@ -1606,5 +1762,206 @@ const FighterDetails = {
         document.addEventListener('keydown', handleEscape);
         
         document.body.appendChild(modal);
+    },
+
+    updateEvolutionChart(fighter, metric) {
+    if (!fighter.fightHistory || fighter.fightHistory.length === 0) {
+        const chartContainer = document.getElementById('evolution-chart');
+        chartContainer.innerHTML = `
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: #888;
+                font-size: 1.1rem;
+            ">
+                📊 No fight history data available
+            </div>
+        `;
+        return;
     }
+    
+    this.drawEvolutionChart(fighter, metric);
+},
+
+drawEvolutionChart(fighter, metric) {
+    const container = document.getElementById('evolution-chart');
+    container.innerHTML = '';
+    
+    const width = container.clientWidth;
+    const height = 400;
+    const margin = { top: 20, right: 30, bottom: 80, left: 60 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    
+    const svg = d3.select('#evolution-chart')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+    
+    // Prepare data based on metric
+    const data = fighter.fightHistory.map((fight, index) => {
+        let value = 0;
+        let label = '';
+        
+        switch(metric) {
+            case 'striking_acc':
+                value = fight.sig_str_acc || 0;
+                label = 'Striking Accuracy (%)';
+                break;
+            case 'striking_def':
+                value = fight.str_def || 0;
+                label = 'Striking Defense (%)';
+                break;
+            case 'sig_strikes':
+                value = fight.sig_str_landed || 0;
+                label = 'Significant Strikes Landed';
+                break;
+            case 'takedowns':
+                value = fight.td_landed || 0;
+                label = 'Takedowns Landed';
+                break;
+            case 'control_time':
+                value = fight.ctrl_time || 0;
+                label = 'Control Time (seconds)';
+                break;
+        }
+        
+        return {
+            index: index + 1,
+            value: value,
+            result: fight.result,
+            opponent: fight.opponent,
+            event: fight.event,
+            date: fight.date,
+            method: fight.method
+        };
+    });
+    
+    // Scales
+    const xScale = d3.scaleLinear()
+        .domain([1, data.length])
+        .range([0, chartWidth]);
+    
+    const yScale = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.value) * 1.1])
+        .range([chartHeight, 0]);
+    
+    // Grid lines
+    g.append('g')
+        .attr('class', 'grid')
+        .attr('opacity', 0.1)
+        .call(d3.axisLeft(yScale)
+            .tickSize(-chartWidth)
+            .tickFormat('')
+        );
+    
+    // X axis
+    g.append('g')
+        .attr('transform', `translate(0,${chartHeight})`)
+        .call(d3.axisBottom(xScale).ticks(data.length))
+        .attr('color', '#888')
+        .selectAll('text')
+        .style('font-size', '12px');
+    
+    // Y axis
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .attr('color', '#888')
+        .selectAll('text')
+        .style('font-size', '12px');
+    
+    // Y axis label
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - margin.left)
+        .attr('x', 0 - (chartHeight / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#fff')
+        .style('font-size', '12px')
+        .text(metric.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+    
+    // Line
+    const line = d3.line()
+        .x(d => xScale(d.index))
+        .y(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
+    
+    g.append('path')
+        .datum(data)
+        .attr('fill', 'none')
+        .attr('stroke', '#d91c1c')
+        .attr('stroke-width', 3)
+        .attr('d', line);
+    
+    // Points
+    g.selectAll('.dot')
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr('class', 'dot')
+        .attr('cx', d => xScale(d.index))
+        .attr('cy', d => yScale(d.value))
+        .attr('r', 6)
+        .attr('fill', d => d.result === 'W' ? '#4ade80' : '#ef4444')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .on('mouseenter', (event, d) => {
+            d3.select(event.target).attr('r', 9);
+            this.showTooltip(
+                `<strong>Fight #${d.index}</strong><br>` +
+                `vs ${d.opponent}<br>` +
+                `Result: <span style="color: ${d.result === 'W' ? '#4ade80' : '#ef4444'}">${d.result}</span> (${d.method})<br>` +
+                `Value: ${d.value.toFixed(1)}<br>` +
+                `${d.event}<br>` +
+                `${d.date.toLocaleDateString()}`,
+                event.clientX,
+                event.clientY
+            );
+        })
+        .on('mouseleave', (event) => {
+            d3.select(event.target).attr('r', 6);
+            this.hideTooltip();
+        });
+    
+    // Legend
+    const legend = svg.append('g')
+        .attr('transform', `translate(${margin.left}, ${height - 50})`);
+    
+    legend.append('circle')
+        .attr('cx', 0)
+        .attr('cy', 0)
+        .attr('r', 6)
+        .attr('fill', '#4ade80')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2);
+    
+    legend.append('text')
+        .attr('x', 15)
+        .attr('y', 5)
+        .style('fill', '#fff')
+        .style('font-size', '12px')
+        .text('Win');
+    
+    legend.append('circle')
+        .attr('cx', 80)
+        .attr('cy', 0)
+        .attr('r', 6)
+        .attr('fill', '#ef4444')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2);
+    
+    legend.append('text')
+        .attr('x', 95)
+        .attr('y', 5)
+        .style('fill', '#fff')
+        .style('font-size', '12px')
+        .text('Loss');
+}
 };
