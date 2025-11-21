@@ -2008,7 +2008,13 @@ drawEvolutionChart(fighter, metric) {
                 `<span style="color:#888;font-size:0.85em;">🖱️ Click for details</span>`, event.clientX, event.clientY);
         })
         .on('mouseleave', function() { d3.select(this).attr('r', 8); self.hideTooltip(); })
-        .on('click', function(event, d) { self.hideTooltip(); if (d.fight_id) FightDetails.show(d.fight_id); });
+        .on('click', function(event, d) { 
+    self.hideTooltip(); 
+    if (d.fight_id) {
+        // CORREÇÃO: Passar null para eventData e 'fighter' para origin
+        FightDetails.show(d.fight_id, null, 'fighter'); 
+    }
+});
     
     g.selectAll('.opponent-label').data(data).enter().append('text')
         .attr('x', d => xScale(d.index)).attr('y', chartHeight + 25).attr('text-anchor', 'end')

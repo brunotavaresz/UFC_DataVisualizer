@@ -4,9 +4,11 @@ const FightDetails = {
     eventData: null,
     tooltip: null,
 
-    async show(fightId, eventData = null) {
+    async show(fightId, eventData = null, origin = 'event') {
         console.log('Showing fight details:', fightId);
         this.eventData = eventData;
+        // ⭐ Adiciona e armazena a origem da chamada (padrão é 'event')
+        this.originPage = origin; 
         
         // Load fight data
         await this.loadFightData(fightId);
@@ -26,7 +28,7 @@ const FightDetails = {
         this.populateHeader();
         this.populateFighterCards();
         this.createVisualizations();
-        this.setupBackButton();
+        this.setupBackButton(); // Usa a origem armazenada
     },
 
     createTooltip() {
@@ -1161,22 +1163,27 @@ populateFighterCards() {
 
     setupBackButton() {
         const backBtn = document.getElementById('back-to-event');
+        
+        // ⭐ Determina a página de destino com base na origem armazenada
+        const targetPage = this.originPage === 'fighter' ? 'fighter-details' : 'event-details';
+
         if (backBtn) {
+            backBtn.textContent = '← Back';
             backBtn.onclick = () => {
                 if (typeof Navigation !== 'undefined') {
-                    // If we came from fighter details, go back there
-                    if (this.currentFight) {
-                        Navigation.navigateTo('fighter-details');
-                    } else {
-                        Navigation.navigateTo('event-details');
-                    }
                     
-                    // Re-initialize event details if available
-                    if (this.eventData && typeof EventDetails !== 'undefined') {
+                    // 1. Navega para a página de destino correta
+                    Navigation.navigateTo(targetPage);
+                    
+                    // 2. Re-inicializa a página do evento se for o caso
+                    if (targetPage === 'event-details' && this.eventData && typeof EventDetails !== 'undefined') {
+                        // Mantendo seu padrão de re-inicialização
                         setTimeout(() => {
-                            EventDetails.init(this.eventData);
+                            EventDetails.init(this.eventData); 
                         }, 100);
                     }
+                    
+                    // Nota: O FighterDetails deve ter sua própria lógica de re-renderização baseada em estado global
                 }
             };
         }
