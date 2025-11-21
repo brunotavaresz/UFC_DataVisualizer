@@ -4,7 +4,7 @@ const FightDetails = {
     eventData: null,
     tooltip: null,
 
-    async show(fightId, eventData) {
+    async show(fightId, eventData = null) {
         console.log('Showing fight details:', fightId);
         this.eventData = eventData;
         
@@ -12,7 +12,7 @@ const FightDetails = {
         await this.loadFightData(fightId);
         
         if (!this.currentFight) {
-            console.error('Fight not found');
+            console.error('Fight not found:', fightId);
             return;
         }
 
@@ -65,34 +65,262 @@ const FightDetails = {
         this.tooltip.style('opacity', '0');
     },
 
-    async loadFightData(fightId) {
-        try {
-            const allFights = await d3.csv('data/fight_details.csv');
-            this.currentFight = allFights.find(f => f.fight_id === fightId);
-            console.log('Fight data loaded:', this.currentFight);
-        } catch (error) {
-            console.error('Error loading fight data:', error);
-        }
-    },
+    // Atualização do FightDetails.js para corrigir o Strikes by Target
 
-    populateHeader() {
-        const f = this.currentFight;
+// 1. Atualiza loadFightData para garantir que lê todos os campos
+async loadFightData(fightId) {
+    try {
+        console.log('🔍 Loading fight data for ID:', fightId);
         
-        document.getElementById('fight-detail-title').textContent = 
-            `${f.r_name} vs ${f.b_name}`;
-        document.getElementById('fight-event-name').textContent = f.event_name || 'UFC Event';
-        document.getElementById('fight-division').textContent =
-        f.division
-            ? f.division.charAt(0).toUpperCase() + f.division.slice(1)
-            : 'N/A';
+        // Primeiro tenta UFC.csv (tem todos os dados incluindo head/body/leg)
+        if (!window.ufcData || window.ufcData.length === 0) {
+            try {
+                const data = await d3.csv('data/UFC.csv');
+                window.ufcData = data;
+                console.log('📥 Loaded UFC.csv:', window.ufcData.length, 'fights');
+            } catch (e) {
+                console.error('Error loading UFC.csv:', e);
+            }
+        }
+        
+        if (window.ufcData && window.ufcData.length > 0) {
+            this.currentFight = window.ufcData.find(f => f.fight_id === fightId);
+            
+            if (this.currentFight) {
+                console.log('✅ Fight found in UFC.csv');
+                console.log('Head strikes - Red:', this.currentFight.r_head_landed, 'Blue:', this.currentFight.b_head_landed);
+                console.log('Body strikes - Red:', this.currentFight.r_body_landed, 'Blue:', this.currentFight.b_body_landed);
+                console.log('Leg strikes - Red:', this.currentFight.r_leg_landed, 'Blue:', this.currentFight.b_leg_landed);
+                return;
+            }
+        }
+        
+        // Fallback: fight_details.csv
+        if (!window.fightDetailsData) {
+            console.log('📥 Loading fight_details.csv as fallback...');
+            window.fightDetailsData = await d3.csv('data/fight_details.csv');
+        }
+        
+        this.currentFight = window.fightDetailsData.find(f => f.fight_id === fightId);
+        
+        if (this.currentFight) {
+            console.log('✅ Fight found in fight_details.csv');
+        } else {
+            console.error('❌ Fight not found:', fightId);
+        }
+    } catch (error) {
+        console.error('Error loading fight data:', error);
+    }
+},
 
-        document.getElementById('fight-method').textContent = f.method || 'N/A';
-        document.getElementById('fight-time').textContent = 
-            `Round ${f.finish_round} - ${this.formatTime(f.match_time_sec)}`;
-    },
-
-    populateFighterCards() {
+// 2. Corrige createStrikesByTarget para debugging
+createStrikesByTarget() {
     const f = this.currentFight;
+    const container = document.getElementById('strikes-target-charts');
+    
+    if (!container) {
+        console.error('❌ Container #strikes-target-charts not found in HTML!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Debug dos dados
+    console.log('📊 Creating Strikes by Target chart');
+    console.log('Red fighter:', f.r_name);
+    console.log('  Head:', f.r_head_landed, 'Body:', f.r_body_landed, 'Leg:', f.r_leg_landed);
+    console.log('Blue fighter:', f.b_name);
+    console.log('  Head:', f.b_head_landed, 'Body:', f.b_body_landed, 'Leg:', f.b_leg_landed);
+
+    const fighters = [
+        { 
+            name: f.r_name, 
+            head: parseFloat(f.r_head_landed) || 0, 
+            body: parseFloat(f.r_body_landed) || 0, 
+            leg: parseFloat(f.r_leg_landed) || 0 
+        },
+        { 
+            name: f.b_name, 
+            head: parseFloat(f.b_head_landed) || 0, 
+            body: parseFloat(f.b_body_landed) || 0, 
+            leg: parseFloat(f.b_leg_landed) || 0 
+        }
+    ];
+
+    fighters.forEach((fighter, idx) => {
+        const pieDiv = document.createElement('div');
+        pieDiv.className = 'pie-chart';
+        pieDiv.style.cssText = `
+            display: inline-block;
+            margin: 0 20px;
+            text-align: center;
+        `;
+        container.appendChild(pieDiv);
+
+        const data = [
+            { label: 'Head', value: fighter.head, color: '#ef4444' },
+            { label: 'Body', value: fighter.body, color: '#fbbf24' },
+            { label: 'Leg', value: fighter.leg, color: '#60a5fa' }
+        ].filter(d => d.value > 0);
+
+        const total = fighter.head + fighter.body + fighter.leg;
+
+        console.log(`Fighter ${idx + 1} (${fighter.name}): Total strikes = ${total}`);
+
+        if (total === 0) {
+            pieDiv.innerHTML = `
+                <div style="
+                    width: 200px;
+                    height: 200px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                    color: #888;
+                ">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+                    <div style="font-weight: bold; color: #fff; margin-bottom: 5px;">${fighter.name}</div>
+                    <div>No strike data</div>
+                </div>
+            `;
+            return;
+        }
+
+        const width = 200;
+        const height = 200;
+        const radius = Math.min(width, height) / 2 - 20;
+
+        const svg = d3.select(pieDiv)
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+            .append('g')
+            .attr('transform', `translate(${width / 2},${height / 2})`);
+
+        const color = d3.scaleOrdinal()
+            .domain(['Head', 'Body', 'Leg'])
+            .range(['#ef4444', '#fbbf24', '#60a5fa']);
+
+        const pie = d3.pie()
+            .value(d => d.value)
+            .sort(null);
+        
+        const arc = d3.arc()
+            .innerRadius(radius * 0.6)
+            .outerRadius(radius);
+
+        const self = this;
+
+        svg.selectAll('path')
+            .data(pie(data))
+            .join('path')
+            .attr('d', arc)
+            .attr('fill', d => d.data.color)
+            .attr('stroke', '#1a1a1a')
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer')
+            .on('mouseover', function(event, d) {
+                d3.select(this).attr('opacity', 0.7);
+                const percentage = ((d.data.value / total) * 100).toFixed(1);
+                self.showTooltip(
+                    `<strong>${d.data.label}</strong><br>${d.data.value} strikes (${percentage}%)`,
+                    event.clientX,
+                    event.clientY
+                );
+            })
+            .on('mouseout', function() {
+                d3.select(this).attr('opacity', 1);
+                self.hideTooltip();
+            });
+
+        // Centro - total
+        svg.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '-0.2em')
+            .style('fill', '#e0e0e0')
+            .style('font-size', '24px')
+            .style('font-weight', 'bold')
+            .text(total);
+
+        svg.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '1.2em')
+            .style('fill', '#888')
+            .style('font-size', '12px')
+            .text('Total');
+
+        // Nome do fighter
+        d3.select(pieDiv)
+            .append('div')
+            .style('text-align', 'center')
+            .style('margin-top', '15px')
+            .style('color', idx === 0 ? '#ef4444' : '#3b82f6')
+            .style('font-size', '16px')
+            .style('font-weight', 'bold')
+            .text(fighter.name);
+
+        // Legenda
+        const legend = d3.select(pieDiv)
+            .append('div')
+            .style('text-align', 'center')
+            .style('margin-top', '10px');
+
+        [
+            { label: 'Head', color: '#ef4444', value: fighter.head },
+            { label: 'Body', color: '#fbbf24', value: fighter.body },
+            { label: 'Leg', color: '#60a5fa', value: fighter.leg }
+        ].forEach(item => {
+            const legendItem = legend.append('div')
+                .style('display', 'inline-block')
+                .style('margin', '0 6px')
+                .style('font-size', '11px');
+
+            legendItem.append('span')
+                .style('display', 'inline-block')
+                .style('width', '10px')
+                .style('height', '10px')
+                .style('background-color', item.color)
+                .style('border-radius', '2px')
+                .style('margin-right', '4px')
+                .style('vertical-align', 'middle');
+
+            legendItem.append('span')
+                .style('color', '#888')
+                .text(`${item.label}: ${item.value}`);
+        });
+    });
+    
+    console.log('✅ Strikes by Target chart created');
+},
+
+    // Substitui estas funções no fight-details.js
+
+populateHeader() {
+    const f = this.currentFight;
+    
+    // Determina o vencedor
+    const redWon = f.winner_id === f.r_id;
+    const blueWon = f.winner_id === f.b_id;
+    const isDraw = !f.winner_id || f.winner_id === '';
+    
+    // Título simples
+    document.getElementById('fight-detail-title').textContent = `${f.r_name} vs ${f.b_name}`;
+    
+    document.getElementById('fight-event-name').textContent = f.event_name || 'UFC Event';
+    document.getElementById('fight-division').textContent =
+        f.division ? f.division.charAt(0).toUpperCase() + f.division.slice(1) : 'N/A';
+    document.getElementById('fight-method').textContent = f.method || 'N/A';
+    document.getElementById('fight-time').textContent = 
+        `Round ${f.finish_round} - ${this.formatTime(f.match_time_sec)}`;
+},
+
+populateFighterCards() {
+    const f = this.currentFight;
+    
+    // Determina o vencedor
+    const redWon = f.winner_id === f.r_id;
+    const blueWon = f.winner_id === f.b_id;
+    const isDraw = !f.winner_id || f.winner_id === '';
 
     const cmp = (a, b) => {
         if (a > b) return ['stat-winner', 'stat-loser'];
@@ -100,16 +328,32 @@ const FightDetails = {
         return ['stat-tie', 'stat-tie'];
     };
 
-    // Comparações
     const [rKD, bKD] = cmp(+f.r_kd, +f.b_kd);
     const [rSigAcc, bSigAcc] = cmp(+f.r_sig_str_acc, +f.b_sig_str_acc);
     const [rSigLand, bSigLand] = cmp(+f.r_sig_str_landed, +f.b_sig_str_landed);
     const [rTD, bTD] = cmp(+f.r_td_landed, +f.b_td_landed);
     const [rSub, bSub] = cmp(+f.r_sub_att, +f.b_sub_att);
 
-    // RED
-    document.getElementById('red-fighter-name').textContent = f.r_name;
+    // RED CORNER
+    const redNameEl = document.getElementById('red-fighter-name');
+    redNameEl.innerHTML = redWon 
+        ? ` ${f.r_name}` 
+        : (isDraw ? `${f.r_name}` : `${f.r_name}`);
+    
+    // Estiliza o card do red corner
+    const redCard = document.querySelector('.fighter-card.red-corner');
+    if (redCard) {
+        if (redWon) {
+            redCard.style.background = 'linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(34, 197, 94, 0.05))';
+            redCard.style.borderColor = '#4ade80';
+        } else if (blueWon) {
+            redCard.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.05))';
+            redCard.style.borderColor = '#ef4444';
+        }
+    }
+    
     document.getElementById('red-fighter-stats').innerHTML = `
+        ${redWon ? '<div class="result-badge winner">WINNER</div>' : (blueWon ? '<div class="result-badge loser">DEFEATED</div>' : '<div class="result-badge draw">DRAW</div>')}
         <div class="stat-item">
             <span class="stat-label">Knockdowns:</span>
             <span class="stat-value ${rKD}">${f.r_kd || 0}</span>
@@ -132,9 +376,26 @@ const FightDetails = {
         </div>
     `;
 
-    // BLUE
-    document.getElementById('blue-fighter-name').textContent = f.b_name;
+    // BLUE CORNER
+    const blueNameEl = document.getElementById('blue-fighter-name');
+    blueNameEl.innerHTML = blueWon 
+        ? ` ${f.b_name}` 
+        : (isDraw ? `${f.b_name}` : `${f.b_name}`);
+    
+    // Estiliza o card do blue corner
+    const blueCard = document.querySelector('.fighter-card.blue-corner');
+    if (blueCard) {
+        if (blueWon) {
+            blueCard.style.background = 'linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(34, 197, 94, 0.05))';
+            blueCard.style.borderColor = '#4ade80';
+        } else if (redWon) {
+            blueCard.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.05))';
+            blueCard.style.borderColor = '#ef4444';
+        }
+    }
+    
     document.getElementById('blue-fighter-stats').innerHTML = `
+        ${blueWon ? '<div class="result-badge winner">WINNER</div>' : (redWon ? '<div class="result-badge loser">DEFEATED</div>' : '<div class="result-badge draw">DRAW</div>')}
         <div class="stat-item">
             <span class="stat-label">Knockdowns:</span>
             <span class="stat-value ${bKD}">${f.b_kd || 0}</span>
@@ -143,7 +404,7 @@ const FightDetails = {
             <span class="stat-label">Sig. Strikes:</span>
             <span class="stat-value ${bSigLand}">${f.b_sig_str_landed || 0}/${f.b_sig_str_atmpted || 0}</span>
         </div>
-        <div class="stat-item"a>
+        <div class="stat-item">
             <span class="stat-label">Accuracy:</span>
             <span class="stat-value ${bSigAcc}">${f.b_sig_str_acc || 0}%</span>
         </div>
@@ -156,8 +417,41 @@ const FightDetails = {
             <span class="stat-value ${bSub}">${f.b_sub_att || 0}</span>
         </div>
     `;
+    
+    // Adiciona CSS para os badges
+    if (!document.getElementById('result-badge-styles')) {
+        const style = document.createElement('style');
+        style.id = 'result-badge-styles';
+        style.textContent = `
+            .result-badge {
+                display: inline-block;
+                padding: 6px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 15px;
+            }
+            .result-badge.winner {
+                background: linear-gradient(135deg, #4ade80, #22c55e);
+                color: #000;
+                box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+            }
+            .result-badge.loser {
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                color: #fff;
+                box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            }
+            .result-badge.draw {
+                background: linear-gradient(135deg, #fbbf24, #f59e0b);
+                color: #000;
+                box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+            }
+        `;
+        document.head.appendChild(style);
+    }
 },
-
 
     createVisualizations() {
         this.createStrikesComparison();
@@ -827,7 +1121,7 @@ const FightDetails = {
             points.style("pointer-events", "auto");
 
             // Garante que tooltip não fica presa
-            this.hideTooltip?.();
+            self.hideTooltip();
         }
     }
 
@@ -867,17 +1161,25 @@ const FightDetails = {
 
     setupBackButton() {
         const backBtn = document.getElementById('back-to-event');
-        backBtn.onclick = () => {
-            if (typeof Navigation !== 'undefined') {
-                Navigation.navigateTo('event-details');
-                // Re-initialize event details
-                if (this.eventData && typeof EventDetails !== 'undefined') {
-                    setTimeout(() => {
-                        EventDetails.init(this.eventData);
-                    }, 100);
+        if (backBtn) {
+            backBtn.onclick = () => {
+                if (typeof Navigation !== 'undefined') {
+                    // If we came from fighter details, go back there
+                    if (this.currentFight) {
+                        Navigation.navigateTo('fighter-details');
+                    } else {
+                        Navigation.navigateTo('event-details');
+                    }
+                    
+                    // Re-initialize event details if available
+                    if (this.eventData && typeof EventDetails !== 'undefined') {
+                        setTimeout(() => {
+                            EventDetails.init(this.eventData);
+                        }, 100);
+                    }
                 }
-            }
-        };
+            };
+        }
     }
 };
 

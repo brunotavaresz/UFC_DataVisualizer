@@ -1541,159 +1541,195 @@ const FighterDetails = {
     },
 
     createFighterEvolution(f) {
-        const container = document.createElement('div');
-        container.style.cssText = `
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 2rem;
-            border: 1px solid #333;
-            margin-bottom: 1.5rem;
-        `;
-        
-        const header = document.createElement('div');
-        header.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        `;
-        
-        const title = document.createElement('h2');
-        title.style.cssText = `
-            color: #fff;
-            margin: 0;
-            font-size: 1.5rem;
-            cursor: help;
-        `;
-        title.textContent = 'Fight Evolution';
-        
-        title.addEventListener('mouseenter', (e) => {
-            this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance changes across fights.<br>Shows wins/losses and key stats over time.', e.clientX, e.clientY);
-        });
-        
-        title.addEventListener('mouseleave', () => {
-            this.hideTooltip();
-        });
-        
-        title.addEventListener('mousemove', (e) => {
-            this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance changes across fights.<br>Shows wins/losses and key stats over time.', e.clientX, e.clientY);
-        });
-        
-        header.appendChild(title);
-        
-        // Metric selector
-        const selectorWrapper = document.createElement('div');
-        selectorWrapper.style.cssText = `
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        `;
-        
-        const selectorLabel = document.createElement('span');
-        selectorLabel.style.cssText = `
-            color: #888;
-            font-size: 0.9rem;
-        `;
-        selectorLabel.textContent = 'Metric:';
-        
-        const selector = document.createElement('select');
-        selector.id = 'evolution-metric-selector';
-        selector.style.cssText = `
-            background: #2d2d2d;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            cursor: pointer;
-            outline: none;
-        `;
-        
-        const metrics = [
-            { value: 'striking_acc', label: 'Striking Accuracy' },
-            { value: 'striking_def', label: 'Striking Defense' },
-            { value: 'sig_strikes', label: 'Significant Strikes' },
-            { value: 'takedowns', label: 'Takedowns' },
-            { value: 'control_time', label: 'Control Time' }
-        ];
-        
-        metrics.forEach(m => {
-            const option = document.createElement('option');
-            option.value = m.value;
-            option.textContent = m.label;
-            selector.appendChild(option);
-        });
-        
-        selector.addEventListener('change', () => {
-            this.updateEvolutionChart(f, selector.value);
-        });
-        
-        selectorWrapper.appendChild(selectorLabel);
-        selectorWrapper.appendChild(selector);
-        header.appendChild(selectorWrapper);
-        
-        container.appendChild(header);
-        
-        // Chart container
-        const chartContainer = document.createElement('div');
-        chartContainer.id = 'evolution-chart';
-        chartContainer.style.cssText = `
-            width: 100%;
-            height: 400px;
-            position: relative;
-        `;
-        container.appendChild(chartContainer);
-        
-        // Load and render initial chart
-        setTimeout(() => {
-            this.loadFighterFights(f);
-            this.updateEvolutionChart(f, 'striking_acc');
-        }, 100);
-        
-        return container;
-    },
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid #333;
+        margin-bottom: 1.5rem;
+    `;
     
-    loadFighterFights(fighter) {
-        // Get all fights for this fighter from both red and blue corner
-        const allFights = [];
-        
-        // Check UFC.csv data
-        if (window.ufcData) {
-            window.ufcData.forEach(fight => {
-                if (fight.r_id === fighter.id || fight.b_id === fighter.id) {
-                    const isRed = fight.r_id === fighter.id;
-                    const won = fight.winner_id === fighter.id;
-                    
-                    allFights.push({
-                        date: new Date(fight.date),
-                        event: fight.event_name,
-                        opponent: isRed ? fight.b_name : fight.r_name,
-                        result: won ? 'W' : 'L',
-                        method: fight.method,
-                        round: fight.finish_round,
-                        // Fighter's stats
-                        sig_str_landed: isRed ? fight.r_sig_str_landed : fight.b_sig_str_landed,
-                        sig_str_attempted: isRed ? fight.r_sig_str_atmpted : fight.b_sig_str_atmpted,
-                        sig_str_acc: isRed ? fight.r_sig_str_acc : fight.b_sig_str_acc,
-                        total_str_landed: isRed ? fight.r_total_str_landed : fight.b_total_str_landed,
-                        str_def: isRed ? fight.r_str_def : fight.b_str_def,
-                        td_landed: isRed ? fight.r_td_landed : fight.b_td_landed,
-                        td_attempted: isRed ? fight.r_td_atmpted : fight.b_td_atmpted,
-                        ctrl_time: isRed ? fight.r_ctrl : fight.b_ctrl,
-                        kd: isRed ? fight.r_kd : fight.b_kd
-                    });
-                }
-            });
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    `;
+    
+    const title = document.createElement('h2');
+    title.style.cssText = `
+        color: #fff;
+        margin: 0;
+        font-size: 1.5rem;
+        cursor: help;
+    `;
+    title.textContent = '📈 Fight Evolution';
+    
+    title.addEventListener('mouseenter', (e) => {
+        this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance across fights.<br>Green = Win, Red = Loss, Yellow = Draw<br><strong>Click any point to see fight details!</strong>', e.clientX, e.clientY);
+    });
+    title.addEventListener('mouseleave', () => this.hideTooltip());
+    
+    header.appendChild(title);
+    
+    // Selector wrapper
+    const selectorWrapper = document.createElement('div');
+    selectorWrapper.style.cssText = `
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    `;
+    
+    const selectorLabel = document.createElement('span');
+    selectorLabel.style.cssText = `color: #888; font-size: 0.9rem;`;
+    selectorLabel.textContent = 'Metric:';
+    
+    const selector = document.createElement('select');
+    selector.id = 'evolution-metric-selector';
+    selector.style.cssText = `
+        background: #2d2d2d;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+    `;
+    
+    // NOVAS MÉTRICAS - mais interessantes!
+    const metrics = [
+        { value: 'win_streak', label: 'Win/Loss Streak' },
+        { value: 'cumulative_wins', label: 'Cumulative Wins' },
+        { value: 'win_rate_evolution', label: 'Win Rate Evolution' },
+        { value: 'sig_strikes', label: 'Significant Strikes' },
+        { value: 'striking_acc', label: 'Striking Accuracy' },
+        { value: 'takedowns', label: 'Takedowns' },
+        { value: 'control_time', label: 'Control Time' },
+        { value: 'knockdowns', label: 'Knockdowns' },
+        { value: 'finish_rate', label: 'Finish Rate' }
+    ];
+    
+    metrics.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.value;
+        option.textContent = m.label;
+        selector.appendChild(option);
+    });
+    
+    selector.addEventListener('change', () => {
+        this.updateEvolutionChart(f, selector.value);
+    });
+    
+    selectorWrapper.appendChild(selectorLabel);
+    selectorWrapper.appendChild(selector);
+    header.appendChild(selectorWrapper);
+    container.appendChild(header);
+    
+    // Chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.id = 'evolution-chart';
+    chartContainer.style.cssText = `
+        width: 100%;
+        height: 400px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    chartContainer.innerHTML = `
+        <div style="text-align: center; color: #888;">
+            <div class="spinner" style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid #333;
+                border-top: 3px solid #d91c1c;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            "></div>
+            Loading fight history...
+        </div>
+    `;
+    container.appendChild(chartContainer);
+    
+    setTimeout(async () => {
+        await this.loadFighterFights(f);
+        this.updateEvolutionChart(f, 'win_streak'); // Default: Win/Loss Streak
+    }, 100);
+    
+    return container;
+},
+    
+    async loadFighterFights(fighter) {
+    const allFights = [];
+    
+    // Primeiro tenta carregar do UFC.csv (tem winner_id)
+    if (!window.ufcData || window.ufcData.length === 0) {
+        try {
+            const data = await d3.csv('data/UFC.csv');
+            window.ufcData = data;
+            console.log('Loaded UFC.csv:', window.ufcData.length, 'fights');
+        } catch (error) {
+            console.error('Error loading UFC.csv:', error);
         }
-        
-        // Sort by date
-        allFights.sort((a, b) => a.date - b.date);
-        
-        // Store in fighter object
-        fighter.fightHistory = allFights;
-        
-        console.log(`Loaded ${allFights.length} fights for ${fighter.name}`);
-    },
+    }
+    
+    // Usa UFC.csv como fonte principal (tem winner_id)
+    if (window.ufcData && window.ufcData.length > 0) {
+        window.ufcData.forEach(fight => {
+            // Verifica se o fighter está na luta (red ou blue corner)
+            const isRed = fight.r_id === fighter.id;
+            const isBlue = fight.b_id === fighter.id;
+            
+            if (isRed || isBlue) {
+                const won = fight.winner_id === fighter.id;
+                const isDraw = !fight.winner_id || fight.winner_id === '';
+                
+                allFights.push({
+                    fight_id: fight.fight_id,
+                    date: new Date(fight.date),
+                    event: fight.event_name,
+                    opponent: isRed ? fight.b_name : fight.r_name,
+                    opponent_id: isRed ? fight.b_id : fight.r_id,
+                    result: isDraw ? 'D' : (won ? 'W' : 'L'),
+                    method: fight.method,
+                    round: fight.finish_round,
+                    division: fight.division,
+                    title_fight: fight.title_fight === '1' || fight.title_fight === 'true',
+                    // Fighter's stats
+                    sig_str_landed: parseFloat(isRed ? fight.r_sig_str_landed : fight.b_sig_str_landed) || 0,
+                    sig_str_attempted: parseFloat(isRed ? fight.r_sig_str_atmpted : fight.b_sig_str_atmpted) || 0,
+                    sig_str_acc: parseFloat(isRed ? fight.r_sig_str_acc : fight.b_sig_str_acc) || 0,
+                    total_str_landed: parseFloat(isRed ? fight.r_total_str_landed : fight.b_total_str_landed) || 0,
+                    str_def: parseFloat(isRed ? fight.r_str_def : fight.b_str_def) || 0,
+                    td_landed: parseFloat(isRed ? fight.r_td_landed : fight.b_td_landed) || 0,
+                    td_attempted: parseFloat(isRed ? fight.r_td_atmpted : fight.b_td_atmpted) || 0,
+                    ctrl_time: parseFloat(isRed ? fight.r_ctrl : fight.b_ctrl) || 0,
+                    kd: parseFloat(isRed ? fight.r_kd : fight.b_kd) || 0,
+                    sub_att: parseFloat(isRed ? fight.r_sub_att : fight.b_sub_att) || 0
+                });
+            }
+        });
+    }
+    
+    // Ordena por data (mais antiga primeiro)
+    allFights.sort((a, b) => a.date - b.date);
+    
+    // Armazena no fighter
+    fighter.fightHistory = allFights;
+    
+    console.log(`✅ Loaded ${allFights.length} fights for ${fighter.name}:`);
+    allFights.forEach((f, i) => {
+        console.log(`  ${i+1}. ${f.date.toLocaleDateString()} vs ${f.opponent} - ${f.result} (${f.method})`);
+    });
+    
+    return allFights;
+},
     
     showFullBodyModal(photoUrl, fighterName) {
         const modal = document.createElement('div');
@@ -1764,25 +1800,92 @@ const FighterDetails = {
         document.body.appendChild(modal);
     },
 
-    updateEvolutionChart(fighter, metric) {
+   updateEvolutionChart(fighter, metric) {
     if (!fighter.fightHistory || fighter.fightHistory.length === 0) {
         const chartContainer = document.getElementById('evolution-chart');
         chartContainer.innerHTML = `
             <div style="
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 height: 100%;
                 color: #888;
                 font-size: 1.1rem;
+                gap: 1rem;
             ">
-                📊 No fight history data available
+                <div style="font-size: 3rem;">📊</div>
+                <div>No fight history data available</div>
+                <div style="font-size: 0.9rem; color: #666;">
+                    Fighter ID: ${fighter.id}
+                </div>
             </div>
         `;
         return;
     }
     
+    // 1. Calcular o total oficial de lutas para comparação
+    const totalOfficialFights = fighter.wins + fighter.losses + fighter.draws;
+    const fightsInChart = fighter.fightHistory.length;
+    
     this.drawEvolutionChart(fighter, metric);
+    
+    const chartDiv = document.getElementById('evolution-chart');
+    const parentContainer = chartDiv.parentNode;
+    
+    // 2. Remover qualquer aviso anterior (garantir que não haja duplicatas)
+    const existingWarning = parentContainer.querySelector('.data-warning-discrete');
+    if (existingWarning) {
+        existingWarning.remove();
+    }
+    
+    // 3. Adicionar aviso DISCRETO e *ACIMA* do gráfico
+    if (fightsInChart < totalOfficialFights) {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'data-warning-discrete';
+        warningDiv.style.cssText = `
+            /* Estilo da bolha de alerta */
+            background: rgba(217, 28, 28, 0.1); 
+            color: #d91c1c; 
+            padding: 4px 8px; /* Reduzido */
+            border-radius: 8px;
+            font-size: 0.75rem; 
+            font-weight: 700;
+            
+            /* Layout */
+            display: inline-flex; /* Para não ocupar a linha toda */
+            align-items: center;
+            justify-content: center;
+            gap: 5px; /* Espaço entre ícone e texto */
+            
+            margin-bottom: 1rem; 
+            text-align: center;
+            cursor: help;
+            border: 1px solid #d91c1c50;
+        `;
+        
+        // Texto para o tooltip (traduzido para o português)
+        const tooltipText = `Incomplete Data: Only ${fightsInChart} out of ${totalOfficialFights} historical fights were found in the 'UFC.csv' data file.`;
+        
+        // Conteúdo muito discreto
+        warningDiv.innerHTML = `
+            <span style="font-size: 0.8rem; font-weight: 500;">${fightsInChart}/${totalOfficialFights} Fights</span>
+        `;
+
+        // Adiciona Tooltip para mais detalhes (ao passar o mouse)
+        warningDiv.addEventListener('mouseenter', (e) => {
+            this.showTooltip(tooltipText, e.clientX, e.clientY);
+        });
+        warningDiv.addEventListener('mouseleave', () => {
+            this.hideTooltip();
+        });
+        warningDiv.addEventListener('mousemove', (e) => {
+            this.showTooltip(tooltipText, e.clientX, e.clientY);
+        });
+        
+        // 4. Insere o aviso *antes* do div do gráfico (`chartDiv`), dentro do container principal.
+        parentContainer.insertBefore(warningDiv, chartDiv);
+    }
 },
 
 drawEvolutionChart(fighter, metric) {
@@ -1791,7 +1894,7 @@ drawEvolutionChart(fighter, metric) {
     
     const width = container.clientWidth;
     const height = 400;
-    const margin = { top: 20, right: 30, bottom: 80, left: 60 };
+    const margin = { top: 30, right: 40, bottom: 100, left: 70 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
     
@@ -1803,165 +1906,252 @@ drawEvolutionChart(fighter, metric) {
     const g = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
     
-    // Prepare data based on metric
+    const metricLabels = {
+        'win_streak': 'Win/Loss Streak',
+        'cumulative_wins': 'Total Wins',
+        'win_rate_evolution': 'Win Rate (%)',
+        'sig_strikes': 'Significant Strikes',
+        'striking_acc': 'Striking Accuracy (%)',
+        'takedowns': 'Takedowns',
+        'control_time': 'Control Time (sec)',
+        'knockdowns': 'Knockdowns'
+    };
+    
+    let cumulativeWins = 0;
+    let cumulativeLosses = 0;
+    let currentStreak = 0;
+    
     const data = fighter.fightHistory.map((fight, index) => {
         let value = 0;
-        let label = '';
+        
+        if (fight.result === 'W') {
+            cumulativeWins++;
+            currentStreak = currentStreak >= 0 ? currentStreak + 1 : 1;
+        } else if (fight.result === 'L') {
+            cumulativeLosses++;
+            currentStreak = currentStreak <= 0 ? currentStreak - 1 : -1;
+        }
+        
+        const totalFights = index + 1;
+        const winRate = totalFights > 0 ? (cumulativeWins / totalFights) * 100 : 0;
         
         switch(metric) {
-            case 'striking_acc':
-                value = fight.sig_str_acc || 0;
-                label = 'Striking Accuracy (%)';
-                break;
-            case 'striking_def':
-                value = fight.str_def || 0;
-                label = 'Striking Defense (%)';
-                break;
-            case 'sig_strikes':
-                value = fight.sig_str_landed || 0;
-                label = 'Significant Strikes Landed';
-                break;
-            case 'takedowns':
-                value = fight.td_landed || 0;
-                label = 'Takedowns Landed';
-                break;
-            case 'control_time':
-                value = fight.ctrl_time || 0;
-                label = 'Control Time (seconds)';
-                break;
+            case 'win_streak': value = currentStreak; break;
+            case 'cumulative_wins': value = cumulativeWins; break;
+            case 'win_rate_evolution': value = winRate; break;
+            case 'sig_strikes': value = fight.sig_str_landed || 0; break;
+            case 'striking_acc': value = fight.sig_str_acc || 0; break;
+            case 'takedowns': value = fight.td_landed || 0; break;
+            case 'control_time': value = fight.ctrl_time || 0; break;
+            case 'knockdowns': value = fight.kd || 0; break;
         }
         
         return {
-            index: index + 1,
-            value: value,
-            result: fight.result,
-            opponent: fight.opponent,
-            event: fight.event,
-            date: fight.date,
-            method: fight.method
+            index: index + 1, value, result: fight.result, opponent: fight.opponent,
+            event: fight.event, date: fight.date, method: fight.method,
+            fight_id: fight.fight_id, round: fight.round,
+            cumulativeWins, cumulativeLosses, winRate: winRate.toFixed(1), streak: currentStreak
         };
     });
     
-    // Scales
-    const xScale = d3.scaleLinear()
-        .domain([1, data.length])
-        .range([0, chartWidth]);
+    const xScale = d3.scaleLinear().domain([0.5, data.length + 0.5]).range([0, chartWidth]);
     
-    const yScale = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.value) * 1.1])
-        .range([chartHeight, 0]);
+    let yMin = 0, yMax = d3.max(data, d => d.value) || 10;
+    if (metric === 'win_streak') {
+        yMin = Math.min(0, d3.min(data, d => d.value) || 0) - 1;
+        yMax = Math.max(0, d3.max(data, d => d.value) || 0) + 1;
+    }
     
-    // Grid lines
-    g.append('g')
-        .attr('class', 'grid')
-        .attr('opacity', 0.1)
-        .call(d3.axisLeft(yScale)
-            .tickSize(-chartWidth)
-            .tickFormat('')
-        );
+    const yScale = d3.scaleLinear().domain([yMin, yMax * 1.1]).nice().range([chartHeight, 0]);
     
-    // X axis
-    g.append('g')
-        .attr('transform', `translate(0,${chartHeight})`)
-        .call(d3.axisBottom(xScale).ticks(data.length))
-        .attr('color', '#888')
-        .selectAll('text')
-        .style('font-size', '12px');
+    g.append('g').attr('class', 'grid').attr('opacity', 0.1)
+        .call(d3.axisLeft(yScale).tickSize(-chartWidth).tickFormat(''));
     
-    // Y axis
-    g.append('g')
-        .call(d3.axisLeft(yScale))
-        .attr('color', '#888')
-        .selectAll('text')
-        .style('font-size', '12px');
+    if (metric === 'win_streak') {
+        g.append('line').attr('x1', 0).attr('x2', chartWidth)
+            .attr('y1', yScale(0)).attr('y2', yScale(0))
+            .attr('stroke', '#666').attr('stroke-width', 2).attr('stroke-dasharray', '5,5');
+    }
     
-    // Y axis label
-    g.append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('y', 0 - margin.left)
-        .attr('x', 0 - (chartHeight / 2))
-        .attr('dy', '1em')
-        .style('text-anchor', 'middle')
-        .style('fill', '#fff')
-        .style('font-size', '12px')
-        .text(metric.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+    g.append('g').attr('transform', `translate(0,${chartHeight})`)
+        .call(d3.axisBottom(xScale).ticks(Math.min(data.length, 10)).tickFormat(d => `#${d}`))
+        .attr('color', '#888');
     
-    // Line
-    const line = d3.line()
-        .x(d => xScale(d.index))
-        .y(d => yScale(d.value))
-        .curve(d3.curveMonotoneX);
+    g.append('g').call(d3.axisLeft(yScale)).attr('color', '#888');
     
-    g.append('path')
-        .datum(data)
-        .attr('fill', 'none')
-        .attr('stroke', '#d91c1c')
-        .attr('stroke-width', 3)
-        .attr('d', line);
+    g.append('text').attr('transform', 'rotate(-90)').attr('y', -55).attr('x', -(chartHeight / 2))
+        .attr('dy', '1em').style('text-anchor', 'middle').style('fill', '#fff')
+        .style('font-size', '12px').text(metricLabels[metric] || metric);
     
-    // Points
-    g.selectAll('.dot')
-        .data(data)
-        .enter()
-        .append('circle')
-        .attr('class', 'dot')
-        .attr('cx', d => xScale(d.index))
-        .attr('cy', d => yScale(d.value))
-        .attr('r', 6)
-        .attr('fill', d => d.result === 'W' ? '#4ade80' : '#ef4444')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 2)
-        .style('cursor', 'pointer')
-        .on('mouseenter', (event, d) => {
-            d3.select(event.target).attr('r', 9);
-            this.showTooltip(
-                `<strong>Fight #${d.index}</strong><br>` +
-                `vs ${d.opponent}<br>` +
-                `Result: <span style="color: ${d.result === 'W' ? '#4ade80' : '#ef4444'}">${d.result}</span> (${d.method})<br>` +
-                `Value: ${d.value.toFixed(1)}<br>` +
-                `${d.event}<br>` +
-                `${d.date.toLocaleDateString()}`,
-                event.clientX,
-                event.clientY
-            );
+    if (metric !== 'win_streak') {
+        const area = d3.area().x(d => xScale(d.index)).y0(chartHeight).y1(d => yScale(d.value)).curve(d3.curveMonotoneX);
+        g.append('path').datum(data).attr('fill', 'rgba(217, 28, 28, 0.1)').attr('d', area);
+    }
+    
+    const line = d3.line().x(d => xScale(d.index)).y(d => yScale(d.value)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('fill', 'none')
+        .attr('stroke', metric === 'win_streak' ? '#888' : '#d91c1c').attr('stroke-width', 3).attr('d', line);
+    
+    const self = this;
+    g.selectAll('.fight-point').data(data).enter().append('circle')
+        .attr('class', 'fight-point').attr('cx', d => xScale(d.index)).attr('cy', d => yScale(d.value))
+        .attr('r', 8).attr('fill', d => d.result === 'W' ? '#4ade80' : d.result === 'L' ? '#ef4444' : '#fbbf24')
+        .attr('stroke', '#fff').attr('stroke-width', 2).style('cursor', 'pointer')
+        .on('mouseenter', function(event, d) {
+            d3.select(this).attr('r', 12);
+            let extra = metric === 'win_streak' ? `Streak: <strong>${d.streak > 0 ? '+' + d.streak : d.streak}</strong><br>` :
+                       (metric === 'cumulative_wins' || metric === 'win_rate_evolution') ? `Record: <strong>${d.cumulativeWins}W-${d.cumulativeLosses}L</strong><br>` : '';
+            self.showTooltip(
+                `<strong>Fight #${d.index}</strong><br><span style="color:#d91c1c;">vs ${d.opponent}</span><br>` +
+                `Result: <span style="color:${d.result === 'W' ? '#4ade80' : d.result === 'L' ? '#ef4444' : '#fbbf24'};font-weight:bold;">${d.result === 'W' ? 'WIN' : d.result === 'L' ? 'LOSS' : 'DRAW'}</span><br>` +
+                `Method: ${d.method}<br>${extra}Value: <strong>${d.value.toFixed(1)}</strong><br>${d.event}<br>${d.date.toLocaleDateString()}<br>` +
+                `<span style="color:#888;font-size:0.85em;">🖱️ Click for details</span>`, event.clientX, event.clientY);
         })
-        .on('mouseleave', (event) => {
-            d3.select(event.target).attr('r', 6);
-            this.hideTooltip();
+        .on('mouseleave', function() { d3.select(this).attr('r', 8); self.hideTooltip(); })
+        .on('click', function(event, d) { self.hideTooltip(); if (d.fight_id) FightDetails.show(d.fight_id); });
+    
+    g.selectAll('.opponent-label').data(data).enter().append('text')
+        .attr('x', d => xScale(d.index)).attr('y', chartHeight + 25).attr('text-anchor', 'end')
+        .attr('transform', d => `rotate(-45, ${xScale(d.index)}, ${chartHeight + 25})`)
+        .style('fill', d => d.result === 'W' ? '#4ade80' : d.result === 'L' ? '#ef4444' : '#fbbf24')
+        .style('font-size', '10px').text(d => d.opponent.split(' ').pop().substring(0, 10));
+    
+    const legend = svg.append('g').attr('transform', `translate(${margin.left}, ${height - 25})`);
+    [{ label: 'Win', color: '#4ade80' }, { label: 'Loss', color: '#ef4444' }, { label: 'Draw', color: '#fbbf24' }]
+        .forEach((item, i) => {
+            legend.append('circle').attr('cx', i * 70).attr('cy', 0).attr('r', 6).attr('fill', item.color);
+            legend.append('text').attr('x', i * 70 + 12).attr('y', 5).style('fill', '#fff').style('font-size', '11px').text(item.label);
         });
+    legend.append('text').attr('x', 250).attr('y', 5).style('fill', '#888').style('font-size', '11px').text(`${data.length} fights`);
+},
+
+// Atualiza também createFighterEvolution para esperar pelo carregamento
+createFighterEvolution(f) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid #333;
+        margin-bottom: 1.5rem;
+    `;
     
-    // Legend
-    const legend = svg.append('g')
-        .attr('transform', `translate(${margin.left}, ${height - 50})`);
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    `;
     
-    legend.append('circle')
-        .attr('cx', 0)
-        .attr('cy', 0)
-        .attr('r', 6)
-        .attr('fill', '#4ade80')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 2);
+    const title = document.createElement('h2');
+    title.style.cssText = `
+        color: #fff;
+        margin: 0;
+        font-size: 1.5rem;
+        cursor: help;
+    `;
+    title.textContent = '📈 Fight Evolution';
     
-    legend.append('text')
-        .attr('x', 15)
-        .attr('y', 5)
-        .style('fill', '#fff')
-        .style('font-size', '12px')
-        .text('Win');
+    title.addEventListener('mouseenter', (e) => {
+        this.showTooltip('📊 <strong>Fighter Evolution</strong><br>Track performance across fights.<br>Green = Win, Red = Loss, Yellow = Draw<br><strong>Click any point to see fight details!</strong>', e.clientX, e.clientY);
+    });
+    title.addEventListener('mouseleave', () => this.hideTooltip());
     
-    legend.append('circle')
-        .attr('cx', 80)
-        .attr('cy', 0)
-        .attr('r', 6)
-        .attr('fill', '#ef4444')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 2);
+    header.appendChild(title);
     
-    legend.append('text')
-        .attr('x', 95)
-        .attr('y', 5)
-        .style('fill', '#fff')
-        .style('font-size', '12px')
-        .text('Loss');
+    // Selector wrapper
+    const selectorWrapper = document.createElement('div');
+    selectorWrapper.style.cssText = `
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    `;
+    
+    const selectorLabel = document.createElement('span');
+    selectorLabel.style.cssText = `color: #888; font-size: 0.9rem;`;
+    selectorLabel.textContent = 'Metric:';
+    
+    const selector = document.createElement('select');
+    selector.id = 'evolution-metric-selector';
+    selector.style.cssText = `
+        background: #2d2d2d;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+    `;
+    
+    // Dentro de createFighterEvolution(), substitui o array metrics por:
+const metrics = [
+    { value: 'win_streak', label: 'Win/Loss Streak' },
+    { value: 'cumulative_wins', label: 'Cumulative Wins' },
+    { value: 'win_rate_evolution', label: 'Win Rate Evolution' },
+    { value: 'sig_strikes', label: 'Significant Strikes' },
+    { value: 'striking_acc', label: 'Striking Accuracy' },
+    { value: 'takedowns', label: 'Takedowns' },
+    { value: 'control_time', label: 'Control Time' },
+    { value: 'knockdowns', label: 'Knockdowns' }
+];
+    
+    metrics.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.value;
+        option.textContent = m.label;
+        selector.appendChild(option);
+    });
+    
+    selector.addEventListener('change', () => {
+        this.updateEvolutionChart(f, selector.value);
+    });
+    
+    selectorWrapper.appendChild(selectorLabel);
+    selectorWrapper.appendChild(selector);
+    header.appendChild(selectorWrapper);
+    container.appendChild(header);
+    
+    // Loading state
+    const chartContainer = document.createElement('div');
+    chartContainer.id = 'evolution-chart';
+    chartContainer.style.cssText = `
+        width: 100%;
+        height: 400px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    chartContainer.innerHTML = `
+        <div style="text-align: center; color: #888;">
+            <div class="spinner" style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid #333;
+                border-top: 3px solid #d91c1c;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            "></div>
+            Loading fight history...
+        </div>
+    `;
+    container.appendChild(chartContainer);
+    
+    // Carrega e renderiza após o DOM estar pronto
+    setTimeout(async () => {
+        await this.loadFighterFights(f);
+        // ✅ CORREÇÃO: Lê o valor atual do seletor para renderizar o gráfico inicial
+        const initialMetric = document.getElementById('evolution-metric-selector').value;
+        this.updateEvolutionChart(f, initialMetric);
+    }, 100);
+
+
+    
+    return container;
 }
 };
