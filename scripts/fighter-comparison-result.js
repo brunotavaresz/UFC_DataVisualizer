@@ -3,30 +3,64 @@ const FighterComparisonResult = {
     fighter1: null,
     fighter2: null,
     sourceContext: null, // Track where comparison was initiated from
+    tooltip: null,
+
+    createTooltip() {
+        if (this.tooltip) {
+            this.tooltip.remove();
+        }
+        
+        this.tooltip = document.createElement('div');
+        this.tooltip.style.cssText = `
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            border: 2px solid #d91c1c;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            max-width: 300px;
+            line-height: 1.5;
+        `;
+        document.body.appendChild(this.tooltip);
+    },
+    
+    showTooltip(text, x, y) {
+        if (!this.tooltip) this.createTooltip();
+        this.tooltip.innerHTML = text;
+        this.tooltip.style.left = (x + 15) + 'px';
+        this.tooltip.style.top = (y - 15) + 'px';
+        this.tooltip.style.opacity = '1';
+    },
+    
+    hideTooltip() {
+        if (this.tooltip) {
+            this.tooltip.style.opacity = '0';
+        }
+    },
     
     async show(fighter1, fighter2, source = null) {
         this.fighter1 = fighter1;
         this.fighter2 = fighter2;
-        this.sourceContext = source; // 'table' or 'details' or null
+        this.sourceContext = source;
         
         Navigation.navigateTo('fighter-comparison-result');
-        
-        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'instant' });
         
-        // Show loading state
         this.showLoadingState();
         
-        // Preload photos
+        // ✅ Criar tooltip
+        this.createTooltip();
+        
         await this.preloadBothFighterPhotos();
-        
-        // Render the comparison page
         this.renderComparisonPage();
-        
-        // Hide loading
         this.hideLoadingState();
         
-        // Ensure scroll to top after render
         setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'instant' });
         }, 50);
@@ -89,136 +123,628 @@ const FighterComparisonResult = {
     },
     
     renderComparisonPage() {
-        const page = document.getElementById('fighter-comparison-result');
-        page.innerHTML = '';
-        
-        const container = document.createElement('div');
-        container.style.cssText = `
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-            animation: fadeIn 0.5s ease;
+    const page = document.getElementById('fighter-comparison-result');
+    page.innerHTML = '';
+    
+    const container = document.createElement('div');
+    container.style.cssText = `
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeIn 0.5s ease;
+    `;
+    
+    // Header with back button
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    `;
+    
+    const backBtn = document.createElement('button');
+    backBtn.style.cssText = `
+        background: #1a1a1a;
+        border: 2px solid #333;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        color: #fff;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    `;
+    backBtn.innerHTML = '← Back';
+    backBtn.addEventListener('mouseenter', () => {
+        backBtn.style.background = '#2d2d2d';
+        backBtn.style.borderColor = '#d91c1c';
+    });
+    backBtn.addEventListener('mouseleave', () => {
+        backBtn.style.background = '#1a1a1a';
+        backBtn.style.borderColor = '#333';
+    });
+    backBtn.addEventListener('click', () => {
+        if (this.sourceContext === 'table') {
+            Navigation.navigateTo('fighters');
+        } else if (this.sourceContext === 'details') {
+            Navigation.navigateTo('fighter-comparison-select');
+        } else {
+            Navigation.navigateTo('fighters');
+        }
+    });
+    
+    header.appendChild(backBtn);
+    container.appendChild(header);
+    
+    // Main comparison grid
+    const comparisonGrid = document.createElement('div');
+    comparisonGrid.style.cssText = `
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    `;
+    
+    // Fighter 1 Card
+    comparisonGrid.appendChild(this.createFighterHeaderCard(this.fighter1, 'left'));
+    
+    // VS Badge
+    const vsBadge = document.createElement('div');
+    vsBadge.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    `;
+    
+    const vsBadgeCircle = document.createElement('div');
+    vsBadgeCircle.style.cssText = `
+        background: linear-gradient(135deg, #d91c1c, #ff4444);
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: white;
+        box-shadow: 0 8px 32px rgba(217, 28, 28, 0.6);
+        border: 4px solid #fff;
+    `;
+    vsBadgeCircle.textContent = 'VS';
+    
+    vsBadge.appendChild(vsBadgeCircle);
+    comparisonGrid.appendChild(vsBadge);
+    
+    // Fighter 2 Card
+    comparisonGrid.appendChild(this.createFighterHeaderCard(this.fighter2, 'right'));
+    
+    container.appendChild(comparisonGrid);
+    
+    // Stats Comparison Section
+    container.appendChild(this.createStatsComparisonTable());
+    
+    // ✅ CORREÇÃO: Criar statsGrid e adicionar todos os charts
+    const statsGrid = document.createElement('div');
+    statsGrid.style.cssText = `
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    `;
+    
+    // Evolution Chart (full width - 2 colunas)
+    statsGrid.appendChild(this.createDualEvolutionChart(this.fighter1, this.fighter2));
+    
+    // Radar Charts (1 coluna cada)
+    statsGrid.appendChild(this.createDualRadarChart('striking'));
+    statsGrid.appendChild(this.createDualRadarChart('grappling'));
+    
+    container.appendChild(statsGrid);
+    page.appendChild(container);
+    
+    // Render radar charts after DOM is ready
+    setTimeout(() => {
+        this.renderStrikingComparison();
+        this.renderGrapplingComparison();
+    }, 100);
+},
+
+// ========================================
+// ADICIONAR ESTES 3 MÉTODOS NO FINAL DO OBJETO FighterComparisonResult
+// ========================================
+
+createDualEvolutionChart(fighter1, fighter2) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid #333;
+        grid-column: 1 / -1; /* Full width */
+    `;
+    
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    `;
+    
+    const title = document.createElement('h2');
+    title.style.cssText = `
+        color: #fff;
+        margin: 0;
+        font-size: 1.5rem;
+        cursor: help;
+    `;
+    title.textContent = '📈 Career Evolution Comparison';
+    
+    title.addEventListener('mouseenter', (e) => {
+        if (typeof FighterDetails !== 'undefined' && FighterDetails.showTooltip) {
+            FighterDetails.showTooltip(
+                '📊 <strong>Career Comparison</strong><br>Track both fighters\' performance across their careers.<br><strong>Blue</strong> = ' + fighter1.name + '<br><strong>Red</strong> = ' + fighter2.name + '<br>Click any point for fight details!',
+                e.clientX,
+                e.clientY
+            );
+        }
+    });
+    title.addEventListener('mouseleave', () => {
+        if (typeof FighterDetails !== 'undefined' && FighterDetails.hideTooltip) {
+            FighterDetails.hideTooltip();
+        }
+    });
+    
+    header.appendChild(title);
+    
+    // Metric selector
+    const selectorWrapper = document.createElement('div');
+    selectorWrapper.style.cssText = `
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    `;
+    
+    const selectorLabel = document.createElement('span');
+    selectorLabel.style.cssText = `color: #888; font-size: 0.9rem;`;
+    selectorLabel.textContent = 'Metric:';
+    
+    const selector = document.createElement('select');
+    selector.id = 'comparison-evolution-selector';
+    selector.style.cssText = `
+        background: #2d2d2d;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+    `;
+    
+    const metrics = [
+        { value: 'win_streak', label: 'Win/Loss Streak' },
+        { value: 'cumulative_wins', label: 'Cumulative Wins' },
+        { value: 'win_rate_evolution', label: 'Win Rate Evolution' },
+        { value: 'sig_strikes', label: 'Significant Strikes' },
+        { value: 'striking_acc', label: 'Striking Accuracy' },
+        { value: 'takedowns', label: 'Takedowns' },
+        { value: 'control_time', label: 'Control Time' },
+        { value: 'knockdowns', label: 'Knockdowns' }
+    ];
+    
+    metrics.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.value;
+        option.textContent = m.label;
+        selector.appendChild(option);
+    });
+    
+    selector.addEventListener('change', () => {
+        this.updateDualEvolutionChart(fighter1, fighter2, selector.value);
+    });
+    
+    selectorWrapper.appendChild(selectorLabel);
+    selectorWrapper.appendChild(selector);
+    header.appendChild(selectorWrapper);
+    container.appendChild(header);
+    
+    // Chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.id = 'dual-evolution-chart';
+    chartContainer.style.cssText = `
+        width: 100%;
+        height: 500px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    chartContainer.innerHTML = `
+        <div style="text-align: center; color: #888;">
+            <div class="spinner" style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid #333;
+                border-top: 3px solid #d91c1c;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            "></div>
+            Loading fight histories...
+        </div>
+    `;
+    container.appendChild(chartContainer);
+    
+    // Load data asynchronously
+    setTimeout(async () => {
+        if (typeof FighterDetails !== 'undefined' && FighterDetails.loadFighterFights) {
+            await Promise.all([
+                FighterDetails.loadFighterFights(fighter1),
+                FighterDetails.loadFighterFights(fighter2)
+            ]);
+        }
+        this.updateDualEvolutionChart(fighter1, fighter2, 'win_streak');
+    }, 100);
+    
+    return container;
+},
+
+updateDualEvolutionChart(fighter1, fighter2, metric) {
+    const hasData1 = fighter1.fightHistory && fighter1.fightHistory.length > 0;
+    const hasData2 = fighter2.fightHistory && fighter2.fightHistory.length > 0;
+    
+    const chartContainer = document.getElementById('dual-evolution-chart');
+    if (!chartContainer) return;
+    
+    if (!hasData1 && !hasData2) {
+        chartContainer.innerHTML = `
+            <div style="text-align: center; color: #888; font-size: 1.1rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                <div>No fight history data available for either fighter</div>
+            </div>
         `;
-        
-        // Header with back button
-        const header = document.createElement('div');
-        header.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
+        return;
+    }
+    
+    if (!hasData1 || !hasData2) {
+        const missingFighter = !hasData1 ? fighter1.name : fighter2.name;
+        const presentFighter = hasData1 ? fighter1.name : fighter2.name;
+        chartContainer.innerHTML = `
+            <div style="text-align: center; color: #888; font-size: 1.1rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <div>No fight history available for ${missingFighter}</div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                    Showing only ${presentFighter}
+                </div>
+            </div>
         `;
+    }
+    
+    this.drawDualEvolutionChart(fighter1, fighter2, metric);
+},
+
+drawDualEvolutionChart(fighter1, fighter2, metric) {
+    const container = document.getElementById('dual-evolution-chart');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const width = container.clientWidth;
+    const height = 500;
+    const margin = { top: 40, right: 120, bottom: 120, left: 70 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    
+    const svg = d3.select('#dual-evolution-chart')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+    
+    const metricLabels = {
+        'win_streak': 'Win/Loss Streak',
+        'cumulative_wins': 'Total Wins',
+        'win_rate_evolution': 'Win Rate (%)',
+        'sig_strikes': 'Significant Strikes',
+        'striking_acc': 'Striking Accuracy (%)',
+        'takedowns': 'Takedowns',
+        'control_time': 'Control Time (sec)',
+        'knockdowns': 'Knockdowns'
+    };
+    
+    // Process data for both fighters
+    const processData = (fighter, color) => {
+        if (!fighter.fightHistory || fighter.fightHistory.length === 0) return [];
         
-        const backBtn = document.createElement('button');
-        backBtn.style.cssText = `
-            background: #1a1a1a;
-            border: 2px solid #333;
-            border-radius: 12px;
-            padding: 0.75rem 1.5rem;
-            color: #fff;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        `;
-        backBtn.innerHTML = '← Back';
-        backBtn.addEventListener('mouseenter', () => {
-            backBtn.style.background = '#2d2d2d';
-            backBtn.style.borderColor = '#d91c1c';
-        });
-        backBtn.addEventListener('mouseleave', () => {
-            backBtn.style.background = '#1a1a1a';
-            backBtn.style.borderColor = '#333';
-        });
-        backBtn.addEventListener('click', () => {
-            // Go back to where the comparison was initiated from
-            if (this.sourceContext === 'table') {
-                Navigation.navigateTo('fighters');
-            } else if (this.sourceContext === 'details') {
-                Navigation.navigateTo('fighter-comparison-select');
-            } else {
-                // Default: try to go back to fighters table
-                Navigation.navigateTo('fighters');
+        let cumulativeWins = 0;
+        let cumulativeLosses = 0;
+        let currentStreak = 0;
+        
+        return fighter.fightHistory.map((fight, index) => {
+            let value = 0;
+            
+            if (fight.result === 'W') {
+                cumulativeWins++;
+                currentStreak = currentStreak >= 0 ? currentStreak + 1 : 1;
+            } else if (fight.result === 'L') {
+                cumulativeLosses++;
+                currentStreak = currentStreak <= 0 ? currentStreak - 1 : -1;
             }
+            
+            const totalFights = index + 1;
+            const winRate = totalFights > 0 ? (cumulativeWins / totalFights) * 100 : 0;
+            
+            switch(metric) {
+                case 'win_streak': value = currentStreak; break;
+                case 'cumulative_wins': value = cumulativeWins; break;
+                case 'win_rate_evolution': value = winRate; break;
+                case 'sig_strikes': value = fight.sig_str_landed || 0; break;
+                case 'striking_acc': value = fight.sig_str_acc || 0; break;
+                case 'takedowns': value = fight.td_landed || 0; break;
+                case 'control_time': value = fight.ctrl_time || 0; break;
+                case 'knockdowns': value = fight.kd || 0; break;
+            }
+            
+            return {
+                index: index + 1,
+                value,
+                result: fight.result,
+                opponent: fight.opponent,
+                event: fight.event,
+                date: fight.date,
+                method: fight.method,
+                fight_id: fight.fight_id,
+                fighter: fighter.name,
+                color: color,
+                cumulativeWins,
+                cumulativeLosses,
+                winRate: winRate.toFixed(1),
+                streak: currentStreak
+            };
         });
+    };
+    
+    const data1 = processData(fighter1, '#3b82f6');
+    const data2 = processData(fighter2, '#ef4444');
+    
+    const normalizeData = (data) => {
+        const maxIndex = data.length;
+        return data.map(d => ({
+            ...d,
+            normalizedIndex: (d.index / maxIndex) * 100
+        }));
+    };
+    
+    const normalized1 = normalizeData(data1);
+    const normalized2 = normalizeData(data2);
+    
+    const xScale = d3.scaleLinear()
+        .domain([0, 100])
+        .range([0, chartWidth]);
+    
+    let yMin = 0;
+    let yMax = Math.max(
+        d3.max(normalized1, d => d.value) || 10,
+        d3.max(normalized2, d => d.value) || 10
+    );
+    
+    if (metric === 'win_streak') {
+        yMin = Math.min(
+            0,
+            d3.min(normalized1, d => d.value) || 0,
+            d3.min(normalized2, d => d.value) || 0
+        ) - 1;
+        yMax = Math.max(
+            0,
+            d3.max(normalized1, d => d.value) || 0,
+            d3.max(normalized2, d => d.value) || 0
+        ) + 1;
+    }
+    
+    const yScale = d3.scaleLinear()
+        .domain([yMin, yMax * 1.1])
+        .nice()
+        .range([chartHeight, 0]);
+    
+    // Grid
+    g.append('g')
+        .attr('class', 'grid')
+        .attr('opacity', 0.1)
+        .call(d3.axisLeft(yScale).tickSize(-chartWidth).tickFormat(''));
+    
+    if (metric === 'win_streak') {
+        g.append('line')
+            .attr('x1', 0)
+            .attr('x2', chartWidth)
+            .attr('y1', yScale(0))
+            .attr('y2', yScale(0))
+            .attr('stroke', '#666')
+            .attr('stroke-width', 2)
+            .attr('stroke-dasharray', '5,5');
+    }
+    
+    // Axes
+    g.append('g')
+        .attr('transform', `translate(0,${chartHeight})`)
+        .call(d3.axisBottom(xScale).tickFormat(d => `${d}%`))
+        .attr('color', '#888');
+    
+    g.append('text')
+        .attr('x', chartWidth / 2)
+        .attr('y', chartHeight + 50)
+        .attr('text-anchor', 'middle')
+        .style('fill', '#888')
+        .style('font-size', '12px')
+        .text('Career Progress (%)');
+    
+    g.append('g')
+        .call(d3.axisLeft(yScale))
+        .attr('color', '#888');
+    
+    g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', -55)
+        .attr('x', -(chartHeight / 2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('fill', '#fff')
+        .style('font-size', '12px')
+        .text(metricLabels[metric] || metric);
+    
+    // Draw lines
+    const line = d3.line()
+        .x(d => xScale(d.normalizedIndex))
+        .y(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
+    
+    if (normalized1.length > 0) {
+        if (metric !== 'win_streak') {
+            const area1 = d3.area()
+                .x(d => xScale(d.normalizedIndex))
+                .y0(chartHeight)
+                .y1(d => yScale(d.value))
+                .curve(d3.curveMonotoneX);
+            
+            g.append('path')
+                .datum(normalized1)
+                .attr('fill', 'rgba(59, 130, 246, 0.1)')
+                .attr('d', area1);
+        }
         
-        header.appendChild(backBtn);
-        container.appendChild(header);
+        g.append('path')
+            .datum(normalized1)
+            .attr('fill', 'none')
+            .attr('stroke', '#3b82f6')
+            .attr('stroke-width', 3)
+            .attr('d', line);
+    }
+    
+    if (normalized2.length > 0) {
+        if (metric !== 'win_streak') {
+            const area2 = d3.area()
+                .x(d => xScale(d.normalizedIndex))
+                .y0(chartHeight)
+                .y1(d => yScale(d.value))
+                .curve(d3.curveMonotoneX);
+            
+            g.append('path')
+                .datum(normalized2)
+                .attr('fill', 'rgba(239, 68, 68, 0.1)')
+                .attr('d', area2);
+        }
         
-        // Main comparison grid
-        const comparisonGrid = document.createElement('div');
-        comparisonGrid.style.cssText = `
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 2rem;
-            margin-bottom: 3rem;
-        `;
+        g.append('path')
+            .datum(normalized2)
+            .attr('fill', 'none')
+            .attr('stroke', '#ef4444')
+            .attr('stroke-width', 3)
+            .attr('d', line);
+    }
+    
+    // ✅ CORRIGIDO: Usar tooltip local do FighterComparisonResult
+    const self = this; // Guardar referência ao objeto
+    
+    const drawPoints = (data) => {
+        g.selectAll(`.fight-point-${data[0]?.fighter.replace(/\s/g, '-')}`)
+            .data(data)
+            .enter()
+            .append('circle')
+            .attr('class', `fight-point-${data[0]?.fighter.replace(/\s/g, '-')}`)
+            .attr('cx', d => xScale(d.normalizedIndex))
+            .attr('cy', d => yScale(d.value))
+            .attr('r', 6)
+            .attr('fill', d => d.result === 'W' ? '#4ade80' : d.result === 'L' ? '#ef4444' : '#fbbf24')
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer')
+            .on('mouseenter', function(event, d) {
+                d3.select(this).attr('r', 10);
+                let extra = metric === 'win_streak' ? `Streak: <strong>${d.streak > 0 ? '+' + d.streak : d.streak}</strong><br>` :
+                           (metric === 'cumulative_wins' || metric === 'win_rate_evolution') ? `Record: <strong>${d.cumulativeWins}W-${d.cumulativeLosses}L</strong><br>` : '';
+                
+                // ✅ Usar tooltip local
+                self.showTooltip(
+                    `<strong>${d.fighter}</strong> - Fight #${d.index}<br><span style="color:#d91c1c;">vs ${d.opponent}</span><br>` +
+                    `Result: <span style="color:${d.result === 'W' ? '#4ade80' : d.result === 'L' ? '#ef4444' : '#fbbf24'};font-weight:bold;">${d.result === 'W' ? 'WIN' : d.result === 'L' ? 'LOSS' : 'DRAW'}</span><br>` +
+                    `Method: ${d.method}<br>${extra}Value: <strong>${d.value.toFixed(1)}</strong><br>${d.event}<br>${d.date.toLocaleDateString()}<br>` +
+                    `<span style="color:#888;font-size:0.85em;">🖱️ Click for details</span>`,
+                    event.clientX,
+                    event.clientY
+                );
+            })
+            .on('mouseleave', function() {
+                d3.select(this).attr('r', 6);
+                self.hideTooltip(); // ✅ Usar tooltip local
+            })
+            .on('click', function(event, d) {
+                self.hideTooltip(); // ✅ Usar tooltip local
+                if (d.fight_id && typeof FightDetails !== 'undefined') {
+                    console.log('Opening fight:', d.fight_id); // Debug
+                    FightDetails.show(d.fight_id, null, 'comparison');
+                }
+            });
+    };
+    
+    if (normalized1.length > 0) drawPoints(normalized1);
+    if (normalized2.length > 0) drawPoints(normalized2);
+    
+    // Legend
+    const legend = svg.append('g')
+        .attr('transform', `translate(${width - 100}, ${margin.top})`);
+    
+    legend.append('line')
+        .attr('x1', 0).attr('x2', 30).attr('y1', 0).attr('y2', 0)
+        .attr('stroke', '#3b82f6').attr('stroke-width', 3);
+    
+    legend.append('text')
+        .attr('x', 35).attr('y', 5)
+        .style('fill', '#fff').style('font-size', '12px')
+        .text(fighter1.name.split(' ').pop());
+    
+    legend.append('line')
+        .attr('x1', 0).attr('x2', 30).attr('y1', 25).attr('y2', 25)
+        .attr('stroke', '#ef4444').attr('stroke-width', 3);
+    
+    legend.append('text')
+        .attr('x', 35).attr('y', 30)
+        .style('fill', '#fff').style('font-size', '12px')
+        .text(fighter2.name.split(' ').pop());
+    
+    // Result legend
+    const resultLegend = svg.append('g')
+        .attr('transform', `translate(${margin.left}, ${height - 25})`);
+    
+    [
+        { label: 'Win', color: '#4ade80' },
+        { label: 'Loss', color: '#ef4444' },
+        { label: 'Draw', color: '#fbbf24' }
+    ].forEach((item, i) => {
+        resultLegend.append('circle')
+            .attr('cx', i * 70).attr('cy', 0).attr('r', 6)
+            .attr('fill', item.color);
         
-        // Fighter 1 Card
-        comparisonGrid.appendChild(this.createFighterHeaderCard(this.fighter1, 'left'));
-        
-        // VS Badge
-        const vsBadge = document.createElement('div');
-        vsBadge.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        `;
-        
-        const vsBadgeCircle = document.createElement('div');
-        vsBadgeCircle.style.cssText = `
-            background: linear-gradient(135deg, #d91c1c, #ff4444);
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: white;
-            box-shadow: 0 8px 32px rgba(217, 28, 28, 0.6);
-            border: 4px solid #fff;
-        `;
-        vsBadgeCircle.textContent = 'VS';
-        
-        vsBadge.appendChild(vsBadgeCircle);
-        comparisonGrid.appendChild(vsBadge);
-        
-        // Fighter 2 Card
-        comparisonGrid.appendChild(this.createFighterHeaderCard(this.fighter2, 'right'));
-        
-        container.appendChild(comparisonGrid);
-        
-        // Stats Comparison Section
-        container.appendChild(this.createStatsComparisonTable());
-        
-        // Radar Charts Section
-        const radarSection = document.createElement('div');
-        radarSection.style.cssText = `
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        `;
-        
-        radarSection.appendChild(this.createDualRadarChart('striking'));
-        radarSection.appendChild(this.createDualRadarChart('grappling'));
-        
-        container.appendChild(radarSection);
-        
-        page.appendChild(container);
-        
-        // Render radar charts after DOM is ready
-        setTimeout(() => {
-            this.renderStrikingComparison();
-            this.renderGrapplingComparison();
-        }, 100);
-    },
+        resultLegend.append('text')
+            .attr('x', i * 70 + 12).attr('y', 5)
+            .style('fill', '#fff').style('font-size', '11px')
+            .text(item.label);
+    });
+    
+    resultLegend.append('text')
+        .attr('x', 250).attr('y', 5)
+        .style('fill', '#888').style('font-size', '11px')
+        .text(`${normalized1.length} vs ${normalized2.length} fights`);
+},
     
     createFighterHeaderCard(fighter, side) {
         const card = document.createElement('div');
@@ -987,5 +1513,171 @@ const FighterComparisonResult = {
         .attr('fill', '#fff')
         .attr('font-size', '12px')
         .text(this.fighter2.name.split(' ')[0]);
+},
+
+    // Add this method to FighterComparisonResult object in fighter-comparison-result.js
+
+createDualEvolutionChart(fighter1, fighter2) {
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid #333;
+        grid-column: 1 / -1; /* Full width */
+    `;
+    
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    `;
+    
+    const title = document.createElement('h2');
+    title.style.cssText = `
+        color: #fff;
+        margin: 0;
+        font-size: 1.5rem;
+        cursor: help;
+    `;
+    title.textContent = '📈 Career Evolution Comparison';
+    
+    title.addEventListener('mouseenter', (e) => {
+        FighterDetails.showTooltip(
+            '📊 <strong>Career Comparison</strong><br>Track both fighters\' performance across their careers.<br><strong>Blue</strong> = ' + fighter1.name + '<br><strong>Red</strong> = ' + fighter2.name + '<br>Click any point for fight details!',
+            e.clientX,
+            e.clientY
+        );
+    });
+    title.addEventListener('mouseleave', () => FighterDetails.hideTooltip());
+    
+    header.appendChild(title);
+    
+    // Metric selector
+    const selectorWrapper = document.createElement('div');
+    selectorWrapper.style.cssText = `
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    `;
+    
+    const selectorLabel = document.createElement('span');
+    selectorLabel.style.cssText = `color: #888; font-size: 0.9rem;`;
+    selectorLabel.textContent = 'Metric:';
+    
+    const selector = document.createElement('select');
+    selector.id = 'comparison-evolution-selector';
+    selector.style.cssText = `
+        background: #2d2d2d;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+    `;
+    
+    const metrics = [
+        { value: 'win_streak', label: 'Win/Loss Streak' },
+        { value: 'cumulative_wins', label: 'Cumulative Wins' },
+        { value: 'win_rate_evolution', label: 'Win Rate Evolution' },
+        { value: 'sig_strikes', label: 'Significant Strikes' },
+        { value: 'striking_acc', label: 'Striking Accuracy' },
+        { value: 'takedowns', label: 'Takedowns' },
+        { value: 'control_time', label: 'Control Time' },
+        { value: 'knockdowns', label: 'Knockdowns' }
+    ];
+    
+    metrics.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.value;
+        option.textContent = m.label;
+        selector.appendChild(option);
+    });
+    
+    selector.addEventListener('change', () => {
+        this.updateDualEvolutionChart(fighter1, fighter2, selector.value);
+    });
+    
+    selectorWrapper.appendChild(selectorLabel);
+    selectorWrapper.appendChild(selector);
+    header.appendChild(selectorWrapper);
+    container.appendChild(header);
+    
+    // Chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.id = 'dual-evolution-chart';
+    chartContainer.style.cssText = `
+        width: 100%;
+        height: 500px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    chartContainer.innerHTML = `
+        <div style="text-align: center; color: #888;">
+            <div class="spinner" style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid #333;
+                border-top: 3px solid #d91c1c;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            "></div>
+            Loading fight histories...
+        </div>
+    `;
+    container.appendChild(chartContainer);
+    
+    // Load data asynchronously
+    setTimeout(async () => {
+        await Promise.all([
+            FighterDetails.loadFighterFights(fighter1),
+            FighterDetails.loadFighterFights(fighter2)
+        ]);
+        this.updateDualEvolutionChart(fighter1, fighter2, 'win_streak');
+    }, 100);
+    
+    return container;
+},
+
+updateDualEvolutionChart(fighter1, fighter2, metric) {
+    // Check if both fighters have data
+    const hasData1 = fighter1.fightHistory && fighter1.fightHistory.length > 0;
+    const hasData2 = fighter2.fightHistory && fighter2.fightHistory.length > 0;
+    
+    const chartContainer = document.getElementById('dual-evolution-chart');
+    
+    if (!hasData1 && !hasData2) {
+        chartContainer.innerHTML = `
+            <div style="text-align: center; color: #888; font-size: 1.1rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                <div>No fight history data available for either fighter</div>
+            </div>
+        `;
+        return;
+    }
+    
+    if (!hasData1 || !hasData2) {
+        const missingFighter = !hasData1 ? fighter1.name : fighter2.name;
+        chartContainer.innerHTML = `
+            <div style="text-align: center; color: #888; font-size: 1.1rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <div>No fight history available for ${missingFighter}</div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                    Showing only ${hasData1 ? fighter1.name : fighter2.name}
+                </div>
+            </div>
+        `;
+    }
+    
+    this.drawDualEvolutionChart(fighter1, fighter2, metric);
 }
 };

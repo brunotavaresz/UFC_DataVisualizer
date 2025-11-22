@@ -1162,32 +1162,53 @@ populateFighterCards() {
     },
 
     setupBackButton() {
-        const backBtn = document.getElementById('back-to-event');
-        
-        // ⭐ Determina a página de destino com base na origem armazenada
-        const targetPage = this.originPage === 'fighter' ? 'fighter-details' : 'event-details';
-
-        if (backBtn) {
-            backBtn.textContent = '← Back';
-            backBtn.onclick = () => {
-                if (typeof Navigation !== 'undefined') {
-                    
-                    // 1. Navega para a página de destino correta
-                    Navigation.navigateTo(targetPage);
-                    
-                    // 2. Re-inicializa a página do evento se for o caso
-                    if (targetPage === 'event-details' && this.eventData && typeof EventDetails !== 'undefined') {
-                        // Mantendo seu padrão de re-inicialização
-                        setTimeout(() => {
-                            EventDetails.init(this.eventData); 
-                        }, 100);
-                    }
-                    
-                    // Nota: O FighterDetails deve ter sua própria lógica de re-renderização baseada em estado global
-                }
-            };
-        }
+    const backBtn = document.getElementById('back-to-event');
+    
+    // ⭐ Determina a página de destino com base na origem armazenada
+    let targetPage = 'event-details'; // default
+    
+    if (this.originPage === 'fighter') {
+        targetPage = 'fighter-details';
+    } else if (this.originPage === 'comparison') {
+        targetPage = 'fighter-comparison-result';
+    } else if (this.originPage === 'event') {
+        targetPage = 'event-details';
     }
+    
+    console.log('🔙 Setting up back button | Origin:', this.originPage, '| Target:', targetPage);
+
+    if (backBtn) {
+        backBtn.textContent = '← Back';
+        backBtn.onclick = () => {
+            console.log('🔙 Back button clicked | Navigating to:', targetPage);
+            
+            if (typeof Navigation !== 'undefined') {
+                
+                // 1. Navega para a página de destino correta
+                Navigation.navigateTo(targetPage);
+                
+                // 2. Re-inicializa a página do evento se for o caso
+                if (targetPage === 'event-details' && this.eventData && typeof EventDetails !== 'undefined') {
+                    setTimeout(() => {
+                        EventDetails.init(this.eventData); 
+                    }, 100);
+                }
+                
+                // 3. Re-inicializa a página de fighter se for o caso
+                if (targetPage === 'fighter-details' && typeof FighterDetails !== 'undefined') {
+                    console.log('🔄 Re-initializing Fighter Details page');
+                    // FighterDetails deve ter sua própria lógica de restauração
+                }
+                
+                // 4. Re-inicializa a página de comparison se for o caso
+                if (targetPage === 'fighter-comparison-result' && typeof FighterComparisonResult !== 'undefined') {
+                    console.log('🔄 Returning to Fighter Comparison page');
+                    // A página de comparação deve manter seu estado
+                }
+            }
+        };
+    }
+}
 };
 
 // Export
