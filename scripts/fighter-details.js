@@ -14,7 +14,6 @@ const FighterDetails = {
         
         Navigation.navigateTo('fighter-details');
         
-        // SCROLL IMEDIATO para o topo
         window.scrollTo({ top: 0, behavior: 'instant' });
         
         this.showLoadingState();
@@ -161,7 +160,6 @@ const FighterDetails = {
     
     container.addEventListener('click', () => {
         this.hideTooltip();
-        // Aqui você chama a função de comparação
         FighterComparison.startComparison(f.id);
         console.log('Starting comparison for fighter:', f.id, f.name);
         
@@ -172,7 +170,6 @@ const FighterDetails = {
         }, 100);
     });
     
-    // Adiciona a animação de brilho
     const style = document.createElement('style');
     style.textContent = `
         @keyframes shine {
@@ -317,7 +314,7 @@ const FighterDetails = {
         
         leftPanel.appendChild(this.createFighterCard(f));
         leftPanel.appendChild(this.createQuickStats(f));
-        leftPanel.appendChild(this.createCompareButton(f)); // ← ADICIONE AQUI
+        leftPanel.appendChild(this.createCompareButton(f));
         leftPanel.appendChild(this.createPhysicalAttributes(f));
         
         const rightPanel = document.createElement('div');
@@ -328,7 +325,7 @@ const FighterDetails = {
         `;
         
         rightPanel.appendChild(this.createRecordSection(f));
-        rightPanel.appendChild(this.createFighterEvolution(f)); // ← ADICIONE ESTA LINHA
+        rightPanel.appendChild(this.createFighterEvolution(f));// ← ADICIONE ESTA LINHA
         
         const metricsGrid = document.createElement('div');
         metricsGrid.style.cssText = `
@@ -407,9 +404,7 @@ const FighterDetails = {
             this.showFullBodyModal(fullBodyUrl, f.name);
         });
     } else {
-        // Carrega a foto e adiciona o evento de click
         FighterPhotos.loadPhotoIntoElement(f, img).then(() => {
-            // Após carregar, adiciona o click handler
             img.addEventListener('click', () => {
                 const photos = FighterPhotos.photoCache[f.id];
                 if (photos) {
@@ -1149,9 +1144,9 @@ const FighterDetails = {
                 const tooltipY = rect.y + y + height/2;
                 
                 // Calcula a posição ideal para a tooltip
-                const offset = 20; // Distância da tooltip ao ponto
+                const offset = 20;
                 let finalX = tooltipX;
-                let finalY = tooltipY - offset; // Posiciona acima do ponto por padrão
+                let finalY = tooltipY - offset;
                 
                 // Se a tooltip ficaria muito próxima ao topo da janela, mostra abaixo do ponto
                 if (tooltipY - offset < 10) {
@@ -1159,7 +1154,7 @@ const FighterDetails = {
                 }
                 
                 // Ajusta a posição horizontal se necessário para evitar que saia da tela
-                const tooltipWidth = 300; // Largura máxima da tooltip
+                const tooltipWidth = 300;
                 if (finalX + tooltipWidth > window.innerWidth) {
                     finalX = Math.max(10, window.innerWidth - tooltipWidth - 10);
                 }
@@ -1824,7 +1819,7 @@ const FighterDetails = {
         return;
     }
     
-    // 1. Calcular o total oficial de lutas para comparação
+    // Calcular o total oficial de lutas para comparação
     const totalOfficialFights = fighter.wins + fighter.losses + fighter.draws;
     const fightsInChart = fighter.fightHistory.length;
     
@@ -1833,13 +1828,13 @@ const FighterDetails = {
     const chartDiv = document.getElementById('evolution-chart');
     const parentContainer = chartDiv.parentNode;
     
-    // 2. Remover qualquer aviso anterior (garantir que não haja duplicatas)
+    // Remover qualquer aviso anterior (garantir que não haja duplicatas)
     const existingWarning = parentContainer.querySelector('.data-warning-discrete');
     if (existingWarning) {
         existingWarning.remove();
     }
     
-    // 3. Adicionar aviso DISCRETO e *ACIMA* do gráfico
+    // Adicionar aviso DISCRETO e *ACIMA* do gráfico
     if (fightsInChart < totalOfficialFights) {
         const warningDiv = document.createElement('div');
         warningDiv.className = 'data-warning-discrete';
@@ -1883,7 +1878,6 @@ const FighterDetails = {
             this.showTooltip(tooltipText, e.clientX, e.clientY);
         });
         
-        // 4. Insere o aviso *antes* do div do gráfico (`chartDiv`), dentro do container principal.
         parentContainer.insertBefore(warningDiv, chartDiv);
     }
 },
@@ -2151,7 +2145,6 @@ const metrics = [
     // Carrega e renderiza após o DOM estar pronto
     setTimeout(async () => {
         await this.loadFighterFights(f);
-        // ✅ CORREÇÃO: Lê o valor atual do seletor para renderizar o gráfico inicial
         const initialMetric = document.getElementById('evolution-metric-selector').value;
         this.updateEvolutionChart(f, initialMetric);
     }, 100);

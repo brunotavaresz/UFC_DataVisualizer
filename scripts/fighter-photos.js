@@ -1,7 +1,5 @@
-// ===================================
-// UFC Fighter Photos Module (Fixed Edition 🔧)
-// Melhor handling de CORS e fallbacks mais inteligentes
-// ===================================
+// UFC Fighter Photos Module
+
 
 const FighterPhotos = {
     // Cache e config
@@ -19,9 +17,8 @@ const FighterPhotos = {
     // Foto padrão (SVG)
     DEFAULT_PHOTO: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Cdefs%3E%3ClinearGradient id="grad" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%23d91c1c;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%23ff4444;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill="url(%23grad)" width="200" height="200"/%3E%3Ctext x="50%25" y="45%25" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Arial"%3EUFC%3C/text%3E%3Ctext x="50%25" y="65%25" text-anchor="middle" fill="white" font-size="20" font-family="Arial" opacity="0.8"%3EFighter%3C/text%3E%3C/svg%3E',
 
-    // =========================
     // Core
-    // =========================
+
     init() {
         const cached = localStorage.getItem('ufc_fighter_photos');
         if (!cached) return;
@@ -62,16 +59,11 @@ const FighterPhotos = {
         ];
     },
 
-    // =========================
-    // Logging helpers
-    // =========================
     log(...args) {
         if (this.debug) console.log(...args);
     },
 
-    // =========================
-    // Fetch logic (MELHORADO)
-    // =========================
+    // Fetch logic
     async fetchWithTimeout(url, timeout = 4000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -117,32 +109,31 @@ const FighterPhotos = {
         return null;
     },
 
-    // =========================
-    // Extractors (MELHORADOS)
-    // =========================
+    // Extractors
     extractHeadshotUrl(html) {
-        // 1. Meta tag og:image (mais confiável)
+
+
         const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
         if (ogImageMatch?.[1]) {
             this.log(`📸 Found og:image`);
             return ogImageMatch[1];
         }
 
-        // 2. Hero profile image
+        // Hero profile image
         const heroMatch = html.match(/<img[^>]*class=["'][^"']*hero-profile[^"']*["'][^>]*src=["']([^"']+)["']/i);
         if (heroMatch?.[1]) {
             this.log(`📸 Found hero-profile`);
             return heroMatch[1];
         }
 
-        // 3. CloudFront image com -mug (headshot específico)
+        // CloudFront image com -mug (headshot específico)
         const mugMatch = html.match(/(https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+-mug[^"'\s?]*\.(?:jpg|png))/i);
         if (mugMatch?.[1]) {
             this.log(`📸 Found -mug image`);
             return mugMatch[1];
         }
 
-        // 4. Qualquer CloudFront image
+        // Qualquer CloudFront image
         const cloudFrontMatch = html.match(/(https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+\.(?:jpg|png))/i);
         if (cloudFrontMatch?.[1]) {
             this.log(`📸 Found CloudFront image`);
@@ -154,28 +145,28 @@ const FighterPhotos = {
     },
 
     extractFullBodyUrl(html) {
-        // 1. Hero profile image (full body)
+        // Hero profile image (full body)
         const heroImageMatch = html.match(/<img[^>]*class=["'][^"']*hero-profile__image[^"']*["'][^>]*src=["']([^"'?]+)[^"']*["']/i);
         if (heroImageMatch?.[1]) {
             this.log(`🧍 Found hero-profile__image`);
             return heroImageMatch[1];
         }
 
-        // 2. Wrap image
+        // Wrap image
         const wrapMatch = html.match(/<div[^>]*class=["'][^"']*hero-profile__image-wrap[^"']*["'][^>]*>[\s\S]*?<img[^>]*src=["']([^"'?]+)[^"']*["']/i);
         if (wrapMatch?.[1]) {
             this.log(`🧍 Found image-wrap`);
             return wrapMatch[1];
         }
 
-        // 3. athlete_bio_full_body path
+        // athlete_bio_full_body path
         const fullBodyPathMatch = html.match(/(https?:\/\/[^"'\s]*athlete_bio_full_body[^"'\s?]*\.(?:jpg|png))/i);
         if (fullBodyPathMatch?.[1]) {
             this.log(`🧍 Found full_body path`);
             return fullBodyPathMatch[1];
         }
 
-        // 4. CloudFront images (excluindo -mug)
+        // CloudFront images
         const allImages = html.match(/https:\/\/[^"'\s]+\.cloudfront\.net\/[^"'\s?]+\.(?:jpg|png)/gi) || [];
         const fullBodyImages = allImages.filter(url => 
             !url.includes('-mug') && 
@@ -186,7 +177,7 @@ const FighterPhotos = {
             return fullBodyImages[0];
         }
 
-        // 5. Tentar remover -mug do headshot
+        // Tentar remover -mug do headshot
         const headshot = this.extractHeadshotUrl(html);
         if (headshot?.includes('-mug')) {
             this.log(`🧍 Converting -mug to full body`);
@@ -197,9 +188,7 @@ const FighterPhotos = {
         return null;
     },
 
-    // =========================
-    // Main logic (MELHORADO)
-    // =========================
+    // Main logic
     async getFighterPhotos(fighter) {
         const cacheKey = fighter.id;
         const cached = this.photoCache[cacheKey];
@@ -300,7 +289,7 @@ const FighterPhotos = {
         try {
             const photos = await this.getFighterPhotos(fighter);
             
-            // Só atualiza se conseguiu uma foto real (não default)
+            // Só atualiza se conseguiu uma foto real
             if (photos.headshot !== this.DEFAULT_PHOTO) {
                 imgElement.src = photos.headshot;
                 imgElement.classList.remove('loading');

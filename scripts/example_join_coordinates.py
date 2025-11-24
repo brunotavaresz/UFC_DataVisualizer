@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de exemplo mostrando como fazer join entre event_details.csv 
-e locations_coordinates.csv para adicionar lat/long aos eventos
+join entre event_details.csv e locations_coordinates.csv para adicionar lat/long aos eventos
 """
 
 import csv

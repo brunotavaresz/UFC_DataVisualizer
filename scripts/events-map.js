@@ -46,8 +46,6 @@ const EventsMap = {
     async loadCoordinates() {
         try {
             console.log('Loading pre-calculated coordinates...');
-            // Assumindo que DataLoader é acessível ou d3 é carregado.
-            // Para manter a compatibilidade com o código original:
             const data = await d3.csv('data/locations_coordinates.csv');
             
             data.forEach(row => {
@@ -165,19 +163,10 @@ const EventsMap = {
                 }
             });
 
-            // NOVO: Adicionar listener para o evento 'clusterclick' para abrir a lista de eventos
             this.markerClusterGroup.on('clusterclick', (a) => {
-                // Se o cluster estiver no zoom máximo e for "spiderfied"
                 if (a.propagated) {
-                    // Prevenir o zoom padrão se quisermos abrir o modal imediatamente
-                    // a.layer.zoomToBounds({padding: [20, 20]}); // Comportamento padrão de zoom
-                    
-                    // Em vez de esperar pelo 'spiderfied', podemos obter a lista de marcadores
-                    // do cluster e usá-los para identificar a localização.
                     const childMarkers = a.layer.getAllChildMarkers();
                     if (childMarkers.length > 0) {
-                        // Assumindo que todos os markers no cluster do zoom máximo representam o mesmo local
-                        // Se houver mais do que um, usar o primeiro para obter o nome do local
                         const locationName = childMarkers[0].eventData.location; 
                         this.openEventsListForLocation(locationName, childMarkers);
                     }
@@ -312,15 +301,11 @@ const EventsMap = {
         // Adicionar ao grupo de clustering
         this.markerClusterGroup.addLayer(marker);
     },
-
-    // ==========================================================
-    // NOVAS FUNÇÕES PARA ABRIR E FILTRAR A LISTA DE EVENTOS
-    // ==========================================================
     
     openEventsListForLocation(locationName) {
         console.log(`Opening event list for location: ${locationName}`);
         
-        // 1. Filtrar todos os eventos agrupados para este local
+        // Filtrar todos os eventos agrupados para este local
         const eventsAtLocation = this.groupedEvents.filter(e => e.location === locationName);
         
         if (eventsAtLocation.length === 0) {
@@ -336,10 +321,10 @@ const EventsMap = {
             return;
         }
         
-        // 2. Criar a interface da lista
+        // Criar a interface da lista
         content.innerHTML = this.createLocationEventsList(eventsAtLocation, locationName);
         
-        // 3. Mostrar o modal
+        // Mostrar o modal
         modal.style.display = 'block'; 
         
         // Fechar modal ao clicar fora
@@ -372,10 +357,10 @@ const EventsMap = {
         html += '<label for="list-end-date">To:</label><input type="date" id="list-end-date">';
         html += '</div>';
         
-        // NOVO: Container para a lista com cabeçalhos de ordenação
+        // Container para a lista com cabeçalhos de ordenação
         html += '<div id="filtered-location-events">';
         
-        // NOVO: Cabeçalhos de Ordenação
+        // Cabeçalhos de Ordenação
         html += '<div id="event-list-header" style="display: flex; justify-content: space-between; padding: 0.5rem 1.5rem 0.5rem 0.5rem; background: #2d2d2d; border-radius: 6px 6px 0 0; margin-top: 1rem;">';
         html += '<div data-sort="date" data-direction="desc" class="sortable-header active-sort" style="cursor: pointer; color: #d91c1c; font-weight: bold; flex: 3;">Date (▼)</div>';
         html += '<div data-sort="fights" data-direction="asc" class="sortable-header" style="cursor: pointer; color: #e0e0e0; font-weight: 500; flex: 1; text-align: right;">Fights (Asc)</div>';
@@ -385,7 +370,7 @@ const EventsMap = {
         html += this.renderEventsList(events, 'date', 'desc'); // Renderização inicial
         html += '</div>';
         
-        html += '</div>'; // Fecha #filtered-location-events
+        html += '</div>';
         
         // Adicionar o listener para ordenação após a injeção do HTML
         setTimeout(() => {
@@ -428,10 +413,6 @@ const EventsMap = {
                 // Obter filtros de data atuais (se existirem)
                 const startDateInput = document.getElementById('list-start-date');
                 const endDateInput = document.getElementById('list-end-date');
-                
-                // Obter a lista de eventos filtrada (a lógica de filtragem já deve ter sido aplicada)
-                // É mais eficiente aplicar o filtro de data aqui novamente para garantir que a ordenação
-                // é feita no subconjunto correto.
                 
                 const start = startDateInput.value ? new Date(startDateInput.value) : null;
                 const end = endDateInput.value ? new Date(endDateInput.value) : null;
@@ -507,9 +488,7 @@ const EventsMap = {
         endDateInput.addEventListener('change', applyListFilter);
     },
 
-    // 2. Novo EventsMap.renderEventsList (Aplica a Ordenação)
     renderEventsList(events, sortBy = 'date', direction = 'desc') {
-        // Função auxiliar para renderizar a lista de eventos
         
         events.sort((a, b) => {
             let valA, valB;
@@ -581,7 +560,6 @@ const EventsMap = {
     },
 
     setupControls() {
-        // ... (o seu código existente para setupControls) ...
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -626,7 +604,6 @@ const EventsMap = {
     },
 
     applyFilters() {
-        // ... (o seu código existente para applyFilters) ...
         const searchInput = document.getElementById('event-search');
         const startDate = document.getElementById('start-date');
         const endDate = document.getElementById('end-date');
@@ -699,8 +676,6 @@ const EventsMap = {
     },
 
     filterEvents(searchTerm) {
-        // This method is kept for backward compatibility
-        // But now uses applyFilters()
         this.applyFilters();
     }
 };

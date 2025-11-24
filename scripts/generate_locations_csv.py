@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 """
-Script para gerar um CSV com latitude e longitude para cada localização única
-encontrada no arquivo event_details.csv
+Script para gerar um CSV com latitude e longitude para cada localização única encontrada no arquivo event_details.csv
 """
 
 import csv

@@ -3,7 +3,6 @@ const FighterComparison = {
     fighter1: null, // Fighter from details page
     fighter2: null, // Fighter selected by search
     
-    // Inicia a comparação com o fighter da página de detalhes
     startComparison(fighterId) {
         this.fighter1 = DataLoader.getFighterById(fighterId);
         
@@ -16,7 +15,6 @@ const FighterComparison = {
         this.renderSelectionPage();
     },
     
-    // Página de seleção (escolher o segundo fighter)
     renderSelectionPage() {
         const page = document.getElementById('fighter-comparison-select');
         page.innerHTML = '';
@@ -65,10 +63,8 @@ const FighterComparison = {
             margin-bottom: 3rem;
         `;
         
-        // Fighter 1 Card (selected)
         cardsContainer.appendChild(this.createFighterPreviewCard(this.fighter1, true));
         
-        // VS Badge
         const vsBadge = document.createElement('div');
         vsBadge.style.cssText = `
             background: linear-gradient(135deg, #d91c1c, #ff4444);
@@ -87,12 +83,10 @@ const FighterComparison = {
         vsBadge.textContent = 'VS';
         cardsContainer.appendChild(vsBadge);
         
-        // Fighter 2 Card (empty - to be selected)
         cardsContainer.appendChild(this.createEmptyFighterCard());
         
         container.appendChild(cardsContainer);
         
-        // Search Section
         const searchSection = document.createElement('div');
         searchSection.style.cssText = `
             background: #1a1a1a;
@@ -605,7 +599,6 @@ const FighterComparison = {
         if (division1 !== division2 && division1 !== 'unknown' && division2 !== 'unknown') {
             // Show custom modal for different divisions
             this.showDivisionWarningModal(() => {
-                // Callback on confirm - proceed with comparison
                 if (typeof FighterComparisonResult !== 'undefined' && typeof FighterComparisonResult.show === 'function') {
                     try {
                         FighterComparisonResult.show(this.fighter1, this.fighter2, 'details');
@@ -620,8 +613,6 @@ const FighterComparison = {
             return;
         }
 
-        // If the full comparison module is available, delegate rendering to it.
-        // FighterComparisonResult.show handles navigation, loading state and rendering.
         if (typeof FighterComparisonResult !== 'undefined' && typeof FighterComparisonResult.show === 'function') {
             try {
                 FighterComparisonResult.show(this.fighter1, this.fighter2, 'details'); // Pass 'details' as source

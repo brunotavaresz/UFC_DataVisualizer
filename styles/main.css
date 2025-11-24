@@ -212,7 +212,6 @@ nav {
     gap: 1.5rem;
 }
 
-/* Segunda linha de filtros (sliders) - não é mais necessário */
 .filter-grid-sliders {
     margin-top: 1.5rem;
     grid-template-columns: repeat(2, 1fr);
@@ -589,10 +588,7 @@ svg {
         grid-column: span 1;
     }
 
-    /* ================================
-   ADICIONAR AO FINAL DO styles/main.css
-   LOADING ANIMATIONS & EFFECTS
-   ================================ */
+
 
 /* Fade in animation */
 @keyframes fadeIn {
@@ -999,7 +995,6 @@ svg {
     font-size: 1rem;
     line-height: 1.5;
     
-    /* ESSENCIAL: Anular o estilo nativo do campo de data */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -1048,7 +1043,6 @@ svg {
 
 /* Garantir que o botão tem o mesmo alinhamento */
 .controls .btn {
-    /* ... Seu estilo btn existente ... */
     height: 44px; /* Ajustar a altura para coincidir com os inputs */
     padding: 0.75rem 1.5rem;
     display: flex;
@@ -2154,11 +2148,6 @@ svg {
 
 }
 
-/* ========== EVENT LIST MODAL (NOVO) ========== */
-
-/* O .modal e .modal-content já existem no seu CSS para o fight-modal.
-   Vamos apenas garantir que o ID é reutilizado e que os estilos de filtro de data ficam bem. */
-
 #event-list-modal .modal-content {
     /* Ajustes específicos para o modal da lista de eventos */
     max-width: 600px;
@@ -2264,11 +2253,10 @@ svg {
 }
 
 
-/* Estilo NOVO para o botão 'Show All Events' no popup do mapa */
 .leaflet-popup-content button:nth-child(2) {
     margin-top: 0.25rem; 
     padding: 0.5rem 1rem; 
-    background: #1c9cd9; /* Azul para diferenciar da Ação Principal */
+    background: #1c9cd9; 
     color: white; 
     border: none; 
     border-radius: 4px; 

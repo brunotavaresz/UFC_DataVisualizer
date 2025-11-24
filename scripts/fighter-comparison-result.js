@@ -1,8 +1,8 @@
-// Fighter Comparison Result Page - Full Implementation
+// Fighter Comparison Result Page 
 const FighterComparisonResult = {
     fighter1: null,
     fighter2: null,
-    sourceContext: null, // Track where comparison was initiated from
+    sourceContext: null, 
     tooltip: null,
 
     createTooltip() {
@@ -54,7 +54,6 @@ const FighterComparisonResult = {
         
         this.showLoadingState();
         
-        // ✅ Criar tooltip
         this.createTooltip();
         
         await this.preloadBothFighterPhotos();
@@ -229,7 +228,6 @@ const FighterComparisonResult = {
     // Stats Comparison Section
     container.appendChild(this.createStatsComparisonTable());
     
-    // ✅ CORREÇÃO: Criar statsGrid e adicionar todos os charts
     const statsGrid = document.createElement('div');
     statsGrid.style.cssText = `
         display: grid;
@@ -254,10 +252,6 @@ const FighterComparisonResult = {
         this.renderGrapplingComparison();
     }, 100);
 },
-
-// ========================================
-// ADICIONAR ESTES 3 MÉTODOS NO FINAL DO OBJETO FighterComparisonResult
-// ========================================
 
 createDualEvolutionChart(fighter1, fighter2) {
     const container = document.createElement('div');
@@ -652,7 +646,6 @@ drawDualEvolutionChart(fighter1, fighter2, metric) {
             .attr('d', line);
     }
     
-    // ✅ CORRIGIDO: Usar tooltip local do FighterComparisonResult
     const self = this; // Guardar referência ao objeto
     
     const drawPoints = (data) => {
@@ -1514,8 +1507,6 @@ drawDualEvolutionChart(fighter1, fighter2, metric) {
         .attr('font-size', '12px')
         .text(this.fighter2.name.split(' ')[0]);
 },
-
-    // Add this method to FighterComparisonResult object in fighter-comparison-result.js
 
 createDualEvolutionChart(fighter1, fighter2) {
     const container = document.createElement('div');

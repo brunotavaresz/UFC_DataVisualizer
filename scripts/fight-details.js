@@ -7,7 +7,7 @@ const FightDetails = {
     async show(fightId, eventData = null, origin = 'event') {
         console.log('Showing fight details:', fightId);
         this.eventData = eventData;
-        // ⭐ Adiciona e armazena a origem da chamada (padrão é 'event')
+        // Adiciona e armazena a origem da chamada (padrão é 'event')
         this.originPage = origin; 
         
         // Load fight data
@@ -67,9 +67,6 @@ const FightDetails = {
         this.tooltip.style('opacity', '0');
     },
 
-    // Atualização do FightDetails.js para corrigir o Strikes by Target
-
-// 1. Atualiza loadFightData para garantir que lê todos os campos
 async loadFightData(fightId) {
     try {
         console.log('🔍 Loading fight data for ID:', fightId);
@@ -115,7 +112,6 @@ async loadFightData(fightId) {
     }
 },
 
-// 2. Corrige createStrikesByTarget para debugging
 createStrikesByTarget() {
     const f = this.currentFight;
     const container = document.getElementById('strikes-target-charts');
@@ -295,7 +291,6 @@ createStrikesByTarget() {
     console.log('✅ Strikes by Target chart created');
 },
 
-    // Substitui estas funções no fight-details.js
 
 populateHeader() {
     const f = this.currentFight;
@@ -420,7 +415,7 @@ populateFighterCards() {
         </div>
     `;
     
-    // Adiciona CSS para os badges
+    // CSS para os badges
     if (!document.getElementById('result-badge-styles')) {
         const style = document.createElement('style');
         style.id = 'result-badge-styles';
@@ -1007,12 +1002,11 @@ populateFighterCards() {
             }
         });
 
-    // ----- ZOOM VARIABLES -----
     let zoomMode = false;
     const originalX = x.copy();
     const originalY = y.copy();
 
-    // Brush (não ativo por default)
+    // Brush
     const brush = d3.brush()
         .extent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
         .on("end", brushEnded);
@@ -1052,7 +1046,6 @@ populateFighterCards() {
         brushLayer.call(brush.move, null);
     }
 
-    // RESET ZOOM COM DUPLO CLIQUE
     svg.on("dblclick", () => {
         x.domain(originalX.domain());
         y.domain(originalY.domain());
@@ -1114,7 +1107,6 @@ populateFighterCards() {
         } else {
             zoomText.text("🔍 Zoom: OFF");
 
-            // Remove brush COMPLETAMENTE
             brushLayer.selectAll("*").remove();   // limpa dentro do g
             brushLayer.on(".brush", null);        // remove handlers
             brushLayer.attr("pointer-events", "none"); // evita bloqueio
@@ -1184,23 +1176,19 @@ populateFighterCards() {
             
             if (typeof Navigation !== 'undefined') {
                 
-                // 1. Navega para a página de destino correta
                 Navigation.navigateTo(targetPage);
                 
-                // 2. Re-inicializa a página do evento se for o caso
                 if (targetPage === 'event-details' && this.eventData && typeof EventDetails !== 'undefined') {
                     setTimeout(() => {
                         EventDetails.init(this.eventData); 
                     }, 100);
                 }
                 
-                // 3. Re-inicializa a página de fighter se for o caso
                 if (targetPage === 'fighter-details' && typeof FighterDetails !== 'undefined') {
                     console.log('🔄 Re-initializing Fighter Details page');
                     // FighterDetails deve ter sua própria lógica de restauração
                 }
                 
-                // 4. Re-inicializa a página de comparison se for o caso
                 if (targetPage === 'fighter-comparison-result' && typeof FighterComparisonResult !== 'undefined') {
                     console.log('🔄 Returning to Fighter Comparison page');
                     // A página de comparação deve manter seu estado
